@@ -113,8 +113,9 @@ const Checkout = () => {
         
         const paymentDisplayName = {
           pix: 'PIX',
-          money: 'Dinheiro',
-          card: 'Cartão'
+          cash: 'Dinheiro',
+          credit: 'Cartão de Crédito',
+          debit: 'Cartão de Débito'
         }[paymentMethod] || paymentMethod;
         
         const message = encodeURIComponent(

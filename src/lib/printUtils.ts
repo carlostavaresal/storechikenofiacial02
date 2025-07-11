@@ -24,6 +24,7 @@ const getPaymentMethodLabel = (method: PaymentMethod): string => {
     case "cash": return "Dinheiro";
     case "pix": return "Pix";
     case "credit": return "Cartão de Crédito";
+    case "debit": return "Cartão de Débito";
     default: return "Desconhecido";
   }
 };
