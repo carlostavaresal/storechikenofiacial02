@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Phone, MessageSquare, Printer, AlertTriangle } from "lucide-react";
+import { Phone, MessageSquare, Printer, AlertTriangle, Check, Truck, Trash2 } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
 import { printOrder } from "@/lib/printUtils";
@@ -44,6 +44,8 @@ interface OrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStatusChange?: (orderId: string, status: Order["status"]) => void;
+  onDeleteOrder?: (orderId: string) => void;
+  onOutForDelivery?: (orderId: string) => void;
 }
 
 const getStatusBadgeVariant = (status: Order["status"]) => {
@@ -76,7 +78,7 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
-const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange }) => {
+const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange, onDeleteOrder, onOutForDelivery }) => {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
@@ -153,15 +155,23 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
     }
   };
 
-  const handleCancelOrder = () => {
-    if (order.status !== "cancelled") {
-      handleStatusChange("cancelled");
+  const handleConfirmReceived = () => {
+    // Marks order as processing (received and being prepared)
+    if (order.status === "pending") {
+      handleStatusChange("processing");
     }
   };
 
-  const handleMarkAsProcessing = () => {
-    if (order.status !== "processing") {
-      handleStatusChange("processing");
+  const handleMarkAsOutForDelivery = () => {
+    if (order.status === "processing" && onOutForDelivery) {
+      onOutForDelivery(order.id);
+    }
+  };
+
+  const handleDeleteOrder = () => {
+    if (onDeleteOrder) {
+      onDeleteOrder(order.id);
+      onClose();
     }
   };
 
@@ -216,34 +226,50 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
           <Separator />
           
           {/* Status update buttons */}
-          <div className="grid grid-cols-3 gap-2">
-            {order.status !== "processing" && (
-              <Button 
-                variant="secondary" 
-                onClick={handleMarkAsProcessing}
-              >
-                Marcar como Em Preparo
-              </Button>
-            )}
+          <div className="space-y-3">
+            <h3 className="font-medium">Ações do Pedido</h3>
             
-            {order.status !== "delivered" && (
-              <Button 
-                variant="outline" 
-                onClick={handleMarkAsDelivered}
-              >
-                Marcar como Entregue
-              </Button>
-            )}
-            
-            {order.status !== "cancelled" && (
+            <div className="grid grid-cols-2 gap-2">
+              {order.status === "pending" && (
+                <Button 
+                  variant="default" 
+                  onClick={handleConfirmReceived}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Confirmar Recebimento
+                </Button>
+              )}
+              
+              {(order.status === "processing") && (
+                <Button 
+                  variant="secondary" 
+                  onClick={handleMarkAsOutForDelivery}
+                >
+                  <Truck className="mr-2 h-4 w-4" />
+                  Saiu para Entrega
+                </Button>
+              )}
+              
+              {order.status !== "delivered" && order.status !== "cancelled" && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleMarkAsDelivered}
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Marcar como Entregue
+                </Button>
+              )}
+              
               <Button 
                 variant="destructive" 
-                onClick={handleCancelOrder}
+                onClick={handleDeleteOrder}
+                className="col-span-2"
               >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Cancelar
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir Pedido (Suspeito)
               </Button>
-            )}
+            </div>
           </div>
           
           {/* Print button section */}

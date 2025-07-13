@@ -118,11 +118,27 @@ export const useOrders = () => {
     }
   };
 
+  const deleteOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      return false;
+    }
+  };
+
   return {
     orders,
     loading,
     createOrder,
     updateOrderStatus,
+    deleteOrder,
     refetch: fetchOrders
   };
 };

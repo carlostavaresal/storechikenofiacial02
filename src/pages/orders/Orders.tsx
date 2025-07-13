@@ -70,9 +70,9 @@ const formatPhoneForWhatsApp = (phone: string) => {
 
 const Orders: React.FC = () => {
   const { toast } = useToast();
-  const { orders, loading, updateOrderStatus } = useOrders();
+  const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
   const { settings } = useCompanySettings();
-  const { sendDeliveryNotification } = useCustomerNotifications();
+  const { sendDeliveryNotification, sendOrderReceived } = useCustomerNotifications();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -120,10 +120,10 @@ const Orders: React.FC = () => {
         break;
       case "processing":
         soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "saiu para entrega";
-        toastTitle = "Pedido Saiu para Entrega";
-        // Send delivery notification to customer
-        sendDeliveryNotification(order);
+        statusMessage = "em preparo";
+        toastTitle = "Pedido Recebido";
+        // Send order received notification to customer
+        sendOrderReceived(order);
         break;
       case "pending":
         soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
@@ -140,6 +140,48 @@ const Orders: React.FC = () => {
       title: toastTitle,
       description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
     });
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    // Find the order by id to get order number for confirmation
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const success = await deleteOrder(orderId);
+    
+    if (success) {
+      toast({
+        title: "Pedido Excluído",
+        description: `Pedido ${order.order_number} foi excluído por suspeita`,
+        variant: "destructive",
+      });
+      
+      // Play sound for deletion
+      playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o pedido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOutForDelivery = async (orderId: string) => {
+    // Find the order by order_number instead of id
+    const order = orders.find(o => o.order_number === orderId);
+    if (!order) return;
+
+    // Send delivery notification to customer
+    sendDeliveryNotification(order);
+    
+    toast({
+      title: "Pedido Saiu para Entrega",
+      description: `Cliente ${order.customer_name} foi notificado via WhatsApp`,
+    });
+    
+    // Play sound for delivery
+    playNotificationSound(NOTIFICATION_SOUNDS.ORDER_PROCESSING, 0.5);
   };
 
   if (loading) {
@@ -244,6 +286,8 @@ const Orders: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}
+        onDeleteOrder={handleDeleteOrder}
+        onOutForDelivery={handleOutForDelivery}
       />
     </DashboardLayout>
   );

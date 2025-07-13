@@ -72,8 +72,36 @@ Obrigado pela preferência! 🍕`;
     window.open(whatsappUrl, '_blank');
   };
 
+  const sendOrderReceived = (order: any) => {
+    if (!order.customer_phone) return;
+
+    const message = `✅ *PEDIDO RECEBIDO* - ${order.order_number}
+
+Olá ${order.customer_name}!
+
+Recebemos seu pedido e já começamos a preparar! 👨‍🍳
+
+📋 *Pedido:* ${order.order_number}
+💰 *Total:* R$ ${order.total_amount.toFixed(2)}
+💳 *Pagamento:* ${order.payment_method}
+
+⏰ *Tempo estimado de preparo:* 25-35 minutos
+
+Em breve você receberá uma nova notificação quando o pedido sair para entrega.
+
+Obrigado pela preferência! 🍕`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const customerPhone = formatPhoneForWhatsApp(order.customer_phone);
+    const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
+    
+    // Open WhatsApp to send received notification
+    window.open(whatsappUrl, '_blank');
+  };
+
   return {
     sendOrderConfirmation,
-    sendDeliveryNotification
+    sendDeliveryNotification,
+    sendOrderReceived
   };
 };
