@@ -78,7 +78,7 @@ Por favor, confirme o recebimento deste pedido.`;
         sendOrderToWhatsApp(latestOrder);
       }
     }
-  }, [orders, settings]);
+  }, [orders, settings, sendOrderConfirmation]);
 
   return {
     sendOrderToWhatsApp

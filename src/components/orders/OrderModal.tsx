@@ -68,7 +68,7 @@ const getStatusLabel = (status: Order["status"]) => {
     case "delivered":
       return "Entregue";
     case "processing":
-      return "Em preparo";
+      return "Saiu para entrega";
     case "pending":
       return "Aguardando";
     case "cancelled":

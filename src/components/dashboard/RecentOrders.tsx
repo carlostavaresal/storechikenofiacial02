@@ -38,7 +38,7 @@ const getStatusLabel = (status: string) => {
     case "delivered":
       return "Entregue";
     case "processing":
-      return "Em preparo";
+      return "Saiu para entrega";
     case "pending":
       return "Aguardando";
     case "cancelled":
@@ -109,8 +109,15 @@ const RecentOrders: React.FC = () => {
         break;
       case "processing":
         soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "em preparação";
-        toastTitle = "Pedido em Preparação";
+        statusMessage = "em preparo";
+        toastTitle = "Pedido Recebido";
+        // Send order received notification to customer
+        if (order.customer_phone && settings?.whatsapp_number) {
+          const message = encodeURIComponent(
+            `✅ *PEDIDO RECEBIDO* - ${orderId}\n\nOlá ${order.customer_name}!\n\nRecebemos seu pedido e já começamos a preparar! 👨‍🍳\n\n📋 *Pedido:* ${orderId}\n💰 *Total:* R$ ${order.total_amount.toFixed(2)}\n💳 *Pagamento:* ${order.payment_method}\n\n⏰ *Tempo estimado de preparo:* 25-35 minutos\n\nEm breve você receberá uma nova notificação quando o pedido sair para entrega.\n\nObrigado pela preferência! 🍕`
+          );
+          window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
+        }
         break;
       case "pending":
         soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
@@ -128,13 +135,7 @@ const RecentOrders: React.FC = () => {
       description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
     });
     
-    // Send WhatsApp notification to customer if phone is available
-    if (order.customer_phone && settings?.whatsapp_number) {
-      const message = encodeURIComponent(
-        `Olá ${order.customer_name}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
-      );
-      window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
-    }
+    // Remove duplicate WhatsApp notification since it's now handled in the status switch
   };
 
   if (loading) {
@@ -219,6 +220,20 @@ const RecentOrders: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}
+        onOutForDelivery={(orderId) => {
+          const order = orders.find(o => o.order_number === orderId);
+          if (order && order.customer_phone && settings?.whatsapp_number) {
+            const message = encodeURIComponent(
+              `🚚 *PEDIDO SAIU PARA ENTREGA* - ${orderId}\n\nOlá ${order.customer_name}!\n\nSeu pedido saiu para entrega e chegará em breve! 🎉\n\n📋 *Pedido:* ${orderId}\n📍 *Endereço:* ${order.customer_address}\n💰 *Total:* R$ ${order.total_amount.toFixed(2)}\n\n⏰ *Previsão de chegada:* 15-20 minutos\n\nPrepare o pagamento e aguarde nosso entregador!\nObrigado pela preferência! 🍕`
+            );
+            window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
+            
+            toast({
+              title: "Pedido Saiu para Entrega",
+              description: `Cliente ${order.customer_name} foi notificado via WhatsApp`,
+            });
+          }
+        }}
       />
     </div>
   );
