@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -16,16 +17,12 @@ import OrderActionButtons from "@/components/orders/OrderActionButtons";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
-import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Integrate WhatsApp automatic sending
-  useWhatsAppIntegration();
 
   const handleOpenOrderDetails = (order: any) => {
     const formattedOrder = {
@@ -49,6 +46,7 @@ const RecentOrders: React.FC = () => {
     const order = orders.find(o => o.order_number === orderId);
     if (!order) return;
 
+    console.log(`Atualizando status do pedido ${orderId} para ${newStatus}`);
     const success = await updateOrderStatus(order.id, newStatus as any);
     
     if (success) {
@@ -60,6 +58,7 @@ const RecentOrders: React.FC = () => {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
+    console.log(`Excluindo pedido: ${orderId}`);
     const success = await deleteOrder(orderId);
     
     if (success) {

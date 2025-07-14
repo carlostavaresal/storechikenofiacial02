@@ -18,6 +18,8 @@ export const useCustomerNotifications = () => {
       return;
     }
 
+    console.log(`Enviando confirmação de pedido para: ${order.customer_name} - ${order.order_number}`);
+
     const itemsList = order.items.map((item: any) => 
       `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
@@ -46,7 +48,6 @@ Obrigado pela preferência! 🍕`;
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
     console.log(`Enviando confirmação para cliente: ${customerPhone}`);
-    // Open WhatsApp to send confirmation
     window.open(whatsappUrl, '_blank');
   };
 
@@ -55,6 +56,8 @@ Obrigado pela preferência! 🍕`;
       console.log('Customer phone not available for delivery notification:', order.order_number);
       return;
     }
+
+    console.log(`Enviando notificação de entrega para: ${order.customer_name} - ${order.order_number}`);
 
     const message = `🚚 *PEDIDO SAIU PARA ENTREGA* - ${order.order_number}
 
@@ -76,7 +79,6 @@ Obrigado pela preferência! 🍕`;
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
     console.log(`Enviando notificação de entrega para cliente: ${customerPhone}`);
-    // Open WhatsApp to send delivery notification
     window.open(whatsappUrl, '_blank');
   };
 
@@ -85,6 +87,8 @@ Obrigado pela preferência! 🍕`;
       console.log('Customer phone not available for received notification:', order.order_number);
       return;
     }
+
+    console.log(`Enviando notificação de recebimento para: ${order.customer_name} - ${order.order_number}`);
 
     const message = `✅ *PEDIDO RECEBIDO* - ${order.order_number}
 
@@ -107,7 +111,6 @@ Obrigado pela preferência! 🍕`;
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
     console.log(`Enviando notificação de recebimento para cliente: ${customerPhone}`);
-    // Open WhatsApp to send received notification
     window.open(whatsappUrl, '_blank');
   };
 

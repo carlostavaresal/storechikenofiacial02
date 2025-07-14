@@ -3,13 +3,11 @@ import { useEffect, useRef } from 'react';
 import { useOrders } from './useOrders';
 import { useCompanySettings } from './useCompanySettings';
 import { useToast } from './use-toast';
-import { useCustomerNotifications } from './useCustomerNotifications';
 
 export const useWhatsAppIntegration = () => {
   const { orders } = useOrders();
   const { settings } = useCompanySettings();
   const { toast } = useToast();
-  const { sendOrderConfirmation } = useCustomerNotifications();
   const processedOrdersRef = useRef(new Set<string>());
 
   // Format WhatsApp number for proper linking
@@ -61,11 +59,6 @@ Por favor, confirme o recebimento deste pedido.`;
     console.log(`Enviando pedido ${order.order_number} para WhatsApp Business: ${whatsappBusinessNumber}`);
     window.open(whatsappUrl, '_blank');
     
-    // Send confirmation to customer after a short delay
-    setTimeout(() => {
-      sendOrderConfirmation(order);
-    }, 3000); // Wait 3 seconds before sending customer confirmation
-    
     toast({
       title: "Pedido enviado para WhatsApp Business",
       description: `Pedido ${order.order_number} foi redirecionado automaticamente`,
@@ -102,7 +95,7 @@ Por favor, confirme o recebimento deste pedido.`;
       sendOrderToWhatsApp(order);
     });
 
-  }, [orders, settings, sendOrderConfirmation]);
+  }, [orders, settings]);
 
   // Reset processed orders when orders list changes significantly
   useEffect(() => {

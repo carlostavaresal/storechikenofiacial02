@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Truck, Trash2, AlertTriangle } from "lucide-react";
+import { Check, Truck, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useCustomerNotifications } from "@/hooks/useCustomerNotifications";
@@ -23,9 +23,12 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
 
   const handleConfirmReceived = async () => {
     if (order.status === "pending") {
+      console.log(`Confirmando recebimento do pedido: ${order.order_number}`);
+      
+      // Update status first
       await onStatusChange(order.order_number, "processing");
       
-      // Send WhatsApp notification to customer
+      // Send single notification to customer
       sendOrderReceived(order);
       
       toast({
@@ -39,9 +42,12 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
 
   const handleOutForDelivery = async () => {
     if (order.status === "processing") {
+      console.log(`Marcando pedido como saiu para entrega: ${order.order_number}`);
+      
+      // Update status first
       await onStatusChange(order.order_number, "delivered");
       
-      // Send WhatsApp notification to customer
+      // Send single notification to customer
       sendDeliveryNotification(order);
       
       toast({
@@ -55,6 +61,8 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
 
   const handleDeleteSuspicious = async () => {
     if (window.confirm(`Tem certeza que deseja excluir o pedido ${order.order_number} por suspeita?`)) {
+      console.log(`Excluindo pedido suspeito: ${order.order_number}`);
+      
       await onDeleteOrder(order.id);
       
       toast({
