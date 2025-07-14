@@ -68,7 +68,7 @@ Seu pedido saiu para entrega e chegará em breve! 🎉
 
 ⏰ *Previsão de chegada:* 15-20 minutos
 
-Prepare o pagamento e aguarde nosso entregador! 
+Fique tranquilo nosso Entregador já está à caminho da sua Residência com seu Pedido! 
 Obrigado pela preferência! 🍕`;
 
     const encodedMessage = encodeURIComponent(message);
