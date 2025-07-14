@@ -1,6 +1,6 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -9,59 +9,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
+import OrderActionButtons from "@/components/orders/OrderActionButtons";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
-import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
-import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
-
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "delivered":
-      return "outline";
-    case "processing":
-      return "secondary";
-    case "pending":
-      return "default";
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case "delivered":
-      return "Entregue";
-    case "processing":
-      return "Saiu para entrega";
-    case "pending":
-      return "Aguardando";
-    case "cancelled":
-      return "Cancelado";
-    default:
-      return status;
-  }
-};
-
-// Format WhatsApp number for proper linking
-const formatPhoneForWhatsApp = (phone: string) => {
-  const numericOnly = phone.replace(/\D/g, "");
-  if (numericOnly.length === 11 || numericOnly.length === 10) {
-    return `55${numericOnly}`;
-  }
-  return numericOnly;
-};
 
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
-  const { orders, loading, updateOrderStatus } = useOrders();
-  const { settings } = useCompanySettings();
-  const { sendOrderToWhatsApp } = useWhatsAppIntegration();
+  const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -84,58 +43,29 @@ const RecentOrders: React.FC = () => {
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
-    // Find the order by order_number instead of id
     const order = orders.find(o => o.order_number === orderId);
     if (!order) return;
 
     const success = await updateOrderStatus(order.id, newStatus as any);
     
-    if (!success) return;
-    
-    let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-    let statusMessage = "em preparação";
-    let toastTitle = "Status atualizado";
-    
-    switch (newStatus) {
-      case "cancelled":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_CANCELLED;
-        statusMessage = "cancelado";
-        toastTitle = "Pedido Cancelado";
-        break;
-      case "delivered":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_DELIVERED;
-        statusMessage = "entregue";
-        toastTitle = "Pedido Entregue";
-        break;
-      case "processing":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "em preparo";
-        toastTitle = "Pedido Recebido";
-        // Send order received notification to customer
-        if (order.customer_phone && settings?.whatsapp_number) {
-          const message = encodeURIComponent(
-            `✅ *PEDIDO RECEBIDO* - ${orderId}\n\nOlá ${order.customer_name}!\n\nRecebemos seu pedido e já começamos a preparar! 👨‍🍳\n\n📋 *Pedido:* ${orderId}\n💰 *Total:* R$ ${order.total_amount.toFixed(2)}\n💳 *Pagamento:* ${order.payment_method}\n\n⏰ *Tempo estimado de preparo:* 25-35 minutos\n\nEm breve você receberá uma nova notificação quando o pedido sair para entrega.\n\nObrigado pela preferência! 🍕`
-          );
-          window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
-        }
-        break;
-      case "pending":
-        soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
-        statusMessage = "aguardando";
-        toastTitle = "Pedido Aguardando";
-        break;
+    if (success) {
+      toast({
+        title: "Status Atualizado",
+        description: `Pedido ${orderId} foi atualizado com sucesso`,
+      });
     }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    const success = await deleteOrder(orderId);
     
-    // Play appropriate sound
-    playNotificationSound(soundToPlay, 0.5);
-    
-    // Show toast notification
-    toast({
-      title: toastTitle,
-      description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
-    });
-    
-    // Remove duplicate WhatsApp notification since it's now handled in the status switch
+    if (success) {
+      toast({
+        title: "Pedido Excluído",
+        description: "Pedido foi excluído com sucesso",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -151,13 +81,12 @@ const RecentOrders: React.FC = () => {
     );
   }
 
-  // Show only the last 5 orders
   const recentOrders = orders.slice(0, 5);
 
   return (
     <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
       <div className="flex items-center justify-between border-b px-6 py-4">
-        <h2 className="font-semibold">Pedidos Recentes - Tempo Real</h2>
+        <h2 className="font-semibold">Pedidos Recentes - Ações Rápidas</h2>
         <Link
           to="/orders"
           className="text-sm text-primary hover:underline"
@@ -177,37 +106,45 @@ const RecentOrders: React.FC = () => {
               <TableRow>
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Endereço</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead>Itens</TableHead>
+                <TableHead>Ações</TableHead>
+                <TableHead>Ver</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentOrders.map((order) => (
                 <TableRow 
                   key={order.id}
-                  className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""} ${order.status === "pending" ? "bg-yellow-50 border-l-4 border-l-yellow-400" : ""}`}
-                  onClick={() => handleOpenOrderDetails(order)}
+                  className={`${
+                    order.status === "cancelled" ? "bg-muted/30" : ""
+                  } ${
+                    order.status === "pending" ? "bg-yellow-50 border-l-4 border-l-yellow-400" : 
+                    order.status === "processing" ? "bg-blue-50 border-l-4 border-l-blue-400" : ""
+                  }`}
                 >
                   <TableCell className="font-medium">{order.order_number}</TableCell>
                   <TableCell className="font-medium">{order.customer_name}</TableCell>
-                  <TableCell className="text-sm">{order.customer_phone}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm" title={order.customer_address}>
-                    {order.customer_address}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(order.status)}>
-                      {getStatusLabel(order.status)}
-                    </Badge>
-                  </TableCell>
                   <TableCell className="font-medium">R$ {order.total_amount.toFixed(2)}</TableCell>
                   <TableCell className="text-sm">
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>
-                  <TableCell className="text-center">{order.items.length}</TableCell>
+                  <TableCell>
+                    <OrderActionButtons
+                      order={order}
+                      onStatusChange={handleStatusChange}
+                      onDeleteOrder={handleDeleteOrder}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenOrderDetails(order)}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -220,18 +157,11 @@ const RecentOrders: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}
+        onDeleteOrder={handleDeleteOrder}
         onOutForDelivery={(orderId) => {
           const order = orders.find(o => o.order_number === orderId);
-          if (order && order.customer_phone && settings?.whatsapp_number) {
-            const message = encodeURIComponent(
-              `🚚 *PEDIDO SAIU PARA ENTREGA* - ${orderId}\n\nOlá ${order.customer_name}!\n\nSeu pedido saiu para entrega e chegará em breve! 🎉\n\n📋 *Pedido:* ${orderId}\n📍 *Endereço:* ${order.customer_address}\n💰 *Total:* R$ ${order.total_amount.toFixed(2)}\n\n⏰ *Previsão de chegada:* 15-20 minutos\n\nPrepare o pagamento e aguarde nosso entregador!\nObrigado pela preferência! 🍕`
-            );
-            window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
-            
-            toast({
-              title: "Pedido Saiu para Entrega",
-              description: `Cliente ${order.customer_name} foi notificado via WhatsApp`,
-            });
+          if (order) {
+            handleStatusChange(orderId, "delivered");
           }
         }}
       />

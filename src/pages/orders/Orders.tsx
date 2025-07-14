@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,59 +19,17 @@ import {
 } from "@/components/ui/breadcrumb";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { HomeIcon } from "lucide-react";
+import { HomeIcon, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import OrderModal from "@/components/orders/OrderModal";
+import OrderActionButtons from "@/components/orders/OrderActionButtons";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
-import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
-import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { useCustomerNotifications } from "@/hooks/useCustomerNotifications";
-
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "delivered":
-      return "outline";
-    case "processing":
-      return "secondary";
-    case "pending":
-      return "default";
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case "delivered":
-      return "Entregue";
-    case "processing":
-      return "Saiu para entrega";
-    case "pending":
-      return "Aguardando";
-    case "cancelled":
-      return "Cancelado";
-    default:
-      return status;
-  }
-};
-
-// Format WhatsApp number for proper linking
-const formatPhoneForWhatsApp = (phone: string) => {
-  const numericOnly = phone.replace(/\D/g, "");
-  if (numericOnly.length === 11 || numericOnly.length === 10) {
-    return `55${numericOnly}`;
-  }
-  return numericOnly;
-};
 
 const Orders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
-  const { settings } = useCompanySettings();
-  const { sendDeliveryNotification, sendOrderReceived } = useCustomerNotifications();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -95,93 +52,29 @@ const Orders: React.FC = () => {
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
-    // Find the order by order_number instead of id
     const order = orders.find(o => o.order_number === orderId);
     if (!order) return;
 
     const success = await updateOrderStatus(order.id, newStatus as any);
     
-    if (!success) return;
-    
-    let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-    let statusMessage = "em preparação";
-    let toastTitle = "Status atualizado";
-    
-    switch (newStatus) {
-      case "cancelled":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_CANCELLED;
-        statusMessage = "cancelado";
-        toastTitle = "Pedido Cancelado";
-        break;
-      case "delivered":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_DELIVERED;
-        statusMessage = "entregue";
-        toastTitle = "Pedido Entregue";
-        break;
-      case "processing":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "em preparo";
-        toastTitle = "Pedido Recebido";
-        // Send order received notification to customer
-        sendOrderReceived(order);
-        break;
-      case "pending":
-        soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
-        statusMessage = "aguardando";
-        toastTitle = "Pedido Aguardando";
-        break;
+    if (success) {
+      toast({
+        title: "Status Atualizado",
+        description: `Pedido ${orderId} foi atualizado com sucesso`,
+      });
     }
-    
-    // Play appropriate sound
-    playNotificationSound(soundToPlay, 0.5);
-    
-    // Show toast notification
-    toast({
-      title: toastTitle,
-      description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
-    });
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    // Find the order by id to get order number for confirmation
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
     const success = await deleteOrder(orderId);
     
     if (success) {
       toast({
         title: "Pedido Excluído",
-        description: `Pedido ${order.order_number} foi excluído por suspeita`,
-        variant: "destructive",
-      });
-      
-      // Play sound for deletion
-      playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
-    } else {
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o pedido",
+        description: "Pedido foi excluído com sucesso",
         variant: "destructive",
       });
     }
-  };
-
-  const handleOutForDelivery = async (orderId: string) => {
-    // Find the order by order_number instead of id
-    const order = orders.find(o => o.order_number === orderId);
-    if (!order) return;
-
-    // Send delivery notification to customer
-    sendDeliveryNotification(order);
-    
-    toast({
-      title: "Pedido Saiu para Entrega",
-      description: `Cliente ${order.customer_name} foi notificado via WhatsApp`,
-    });
-    
-    // Play sound for delivery
-    playNotificationSound(NOTIFICATION_SOUNDS.ORDER_PROCESSING, 0.5);
   };
 
   if (loading) {
@@ -220,7 +113,7 @@ const Orders: React.FC = () => {
         </Breadcrumb>
 
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Pedidos em Tempo Real</h1>
+          <h1 className="text-3xl font-bold">Gerenciar Pedidos - Tempo Real</h1>
         </div>
 
         <div className="rounded-lg border bg-card shadow">
@@ -237,31 +130,25 @@ const Orders: React.FC = () => {
                     <TableHead>Pedido</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Telefone</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Data</TableHead>
-                    <TableHead>Endereço</TableHead>
+                    <TableHead>Ações</TableHead>
+                    <TableHead>Detalhes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
                     <TableRow 
                       key={order.id}
-                      className={`cursor-pointer hover:bg-muted ${
+                      className={`${
                         order.status === "pending" ? "bg-yellow-50 border-l-4 border-l-yellow-400" : 
                         order.status === "processing" ? "bg-blue-50 border-l-4 border-l-blue-400" :
                         order.status === "cancelled" ? "bg-red-50 border-l-4 border-l-red-400" : ""
                       }`}
-                      onClick={() => handleOpenOrderDetails(order)}
                     >
                       <TableCell className="font-medium">{order.order_number}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
                       <TableCell>{order.customer_phone}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(order.status)}>
-                          {getStatusLabel(order.status)}
-                        </Badge>
-                      </TableCell>
                       <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
                       <TableCell>
                         {formatDistanceToNow(new Date(order.created_at), {
@@ -269,8 +156,22 @@ const Orders: React.FC = () => {
                           locale: ptBR,
                         })}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {order.customer_address}
+                      <TableCell>
+                        <OrderActionButtons
+                          order={order}
+                          onStatusChange={handleStatusChange}
+                          onDeleteOrder={handleDeleteOrder}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenOrderDetails(order)}
+                        >
+                          <Eye className="mr-1 h-3 w-3" />
+                          Ver
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -278,6 +179,16 @@ const Orders: React.FC = () => {
               </Table>
             )}
           </div>
+        </div>
+        
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="font-semibold text-blue-800 mb-2">Como usar as ações:</h3>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>• <strong>Confirmar:</strong> Confirma o recebimento do pedido e notifica o cliente via WhatsApp</li>
+            <li>• <strong>Saiu p/ Entrega:</strong> Marca como saindo para entrega e notifica o cliente</li>
+            <li>• <strong>Excluir:</strong> Remove pedidos suspeitos do sistema</li>
+            <li>• <strong>Ver:</strong> Abre detalhes completos do pedido</li>
+          </ul>
         </div>
       </div>
       
@@ -287,7 +198,12 @@ const Orders: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDeleteOrder={handleDeleteOrder}
-        onOutForDelivery={handleOutForDelivery}
+        onOutForDelivery={(orderId) => {
+          const order = orders.find(o => o.order_number === orderId);
+          if (order) {
+            handleStatusChange(orderId, "delivered");
+          }
+        }}
       />
     </DashboardLayout>
   );
