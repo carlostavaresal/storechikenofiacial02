@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useOrders } from './useOrders';
 import { useCompanySettings } from './useCompanySettings';
 import { useToast } from './use-toast';
@@ -10,6 +10,7 @@ export const useWhatsAppIntegration = () => {
   const { settings } = useCompanySettings();
   const { toast } = useToast();
   const { sendOrderConfirmation } = useCustomerNotifications();
+  const processedOrdersRef = useRef(new Set<string>());
 
   // Format WhatsApp number for proper linking
   const formatPhoneForWhatsApp = (phone: string) => {
@@ -23,6 +24,11 @@ export const useWhatsAppIntegration = () => {
   const sendOrderToWhatsApp = (order: any) => {
     if (!settings?.whatsapp_number) {
       console.log('WhatsApp Business number not configured');
+      toast({
+        title: "Configuração necessária",
+        description: "Configure o número do WhatsApp Business nas configurações",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -52,33 +58,64 @@ Por favor, confirme o recebimento deste pedido.`;
     const whatsappUrl = `https://wa.me/${whatsappBusinessNumber}?text=${encodedMessage}`;
     
     // Open WhatsApp Business automatically
+    console.log(`Enviando pedido ${order.order_number} para WhatsApp Business: ${whatsappBusinessNumber}`);
     window.open(whatsappUrl, '_blank');
     
-    // Send confirmation to customer
+    // Send confirmation to customer after a short delay
     setTimeout(() => {
       sendOrderConfirmation(order);
-    }, 2000); // Wait 2 seconds before sending customer confirmation
+    }, 3000); // Wait 3 seconds before sending customer confirmation
     
     toast({
       title: "Pedido enviado para WhatsApp Business",
       description: `Pedido ${order.order_number} foi redirecionado automaticamente`,
     });
+
+    // Mark order as processed
+    processedOrdersRef.current.add(order.id);
   };
 
   // Monitor new orders and automatically send to WhatsApp
   useEffect(() => {
-    if (orders.length > 0) {
-      const latestOrder = orders[0];
-      // Check if it's a new pending order (created within last 30 seconds)
-      const orderTime = new Date(latestOrder.created_at).getTime();
+    if (!orders || orders.length === 0 || !settings?.whatsapp_number) return;
+
+    // Check for new orders that haven't been processed
+    const newOrders = orders.filter(order => {      
+      // Only process pending orders
+      if (order.status !== 'pending') return false;
+      
+      // Skip if already processed
+      if (processedOrdersRef.current.has(order.id)) return false;
+      
+      // Check if it's a new order (created within last 2 minutes)
+      const orderTime = new Date(order.created_at).getTime();
       const now = new Date().getTime();
       const timeDiff = now - orderTime;
+      const twoMinutesInMs = 2 * 60 * 1000;
       
-      if (latestOrder.status === 'pending' && timeDiff < 30000) { // 30 seconds
-        sendOrderToWhatsApp(latestOrder);
-      }
-    }
+      return timeDiff < twoMinutesInMs;
+    });
+
+    // Process each new order
+    newOrders.forEach(order => {
+      console.log(`Processando novo pedido: ${order.order_number}`);
+      sendOrderToWhatsApp(order);
+    });
+
   }, [orders, settings, sendOrderConfirmation]);
+
+  // Reset processed orders when orders list changes significantly
+  useEffect(() => {
+    const currentOrderIds = new Set(orders.map(order => order.id));
+    const processedIds = Array.from(processedOrdersRef.current);
+    
+    // Remove processed IDs that are no longer in the orders list
+    processedIds.forEach(id => {
+      if (!currentOrderIds.has(id)) {
+        processedOrdersRef.current.delete(id);
+      }
+    });
+  }, [orders]);
 
   return {
     sendOrderToWhatsApp

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -26,12 +25,16 @@ import OrderActionButtons from "@/components/orders/OrderActionButtons";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
+import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const Orders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Integrate WhatsApp automatic sending
+  useWhatsAppIntegration();
 
   const handleOpenOrderDetails = (order: any) => {
     const formattedOrder = {
@@ -182,8 +185,9 @@ const Orders: React.FC = () => {
         </div>
         
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-blue-800 mb-2">Como usar as ações:</h3>
+          <h3 className="font-semibold text-blue-800 mb-2">Sistema de Envio Automático:</h3>
           <ul className="text-sm text-blue-700 space-y-1">
+            <li>• <strong>WhatsApp Business:</strong> Pedidos novos são enviados automaticamente em até 2 minutos</li>
             <li>• <strong>Confirmar:</strong> Confirma o recebimento do pedido e notifica o cliente via WhatsApp</li>
             <li>• <strong>Saiu p/ Entrega:</strong> Marca como saindo para entrega e notifica o cliente</li>
             <li>• <strong>Excluir:</strong> Remove pedidos suspeitos do sistema</li>

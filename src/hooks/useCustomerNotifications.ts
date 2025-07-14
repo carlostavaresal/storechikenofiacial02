@@ -13,7 +13,10 @@ export const useCustomerNotifications = () => {
   };
 
   const sendOrderConfirmation = (order: any) => {
-    if (!order.customer_phone) return;
+    if (!order.customer_phone) {
+      console.log('Customer phone not available for order:', order.order_number);
+      return;
+    }
 
     const itemsList = order.items.map((item: any) => 
       `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
@@ -42,12 +45,16 @@ Obrigado pela preferência! 🍕`;
     const customerPhone = formatPhoneForWhatsApp(order.customer_phone);
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
+    console.log(`Enviando confirmação para cliente: ${customerPhone}`);
     // Open WhatsApp to send confirmation
     window.open(whatsappUrl, '_blank');
   };
 
   const sendDeliveryNotification = (order: any) => {
-    if (!order.customer_phone) return;
+    if (!order.customer_phone) {
+      console.log('Customer phone not available for delivery notification:', order.order_number);
+      return;
+    }
 
     const message = `🚚 *PEDIDO SAIU PARA ENTREGA* - ${order.order_number}
 
@@ -68,12 +75,16 @@ Obrigado pela preferência! 🍕`;
     const customerPhone = formatPhoneForWhatsApp(order.customer_phone);
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
+    console.log(`Enviando notificação de entrega para cliente: ${customerPhone}`);
     // Open WhatsApp to send delivery notification
     window.open(whatsappUrl, '_blank');
   };
 
   const sendOrderReceived = (order: any) => {
-    if (!order.customer_phone) return;
+    if (!order.customer_phone) {
+      console.log('Customer phone not available for received notification:', order.order_number);
+      return;
+    }
 
     const message = `✅ *PEDIDO RECEBIDO* - ${order.order_number}
 
@@ -95,6 +106,7 @@ Obrigado pela preferência! 🍕`;
     const customerPhone = formatPhoneForWhatsApp(order.customer_phone);
     const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodedMessage}`;
     
+    console.log(`Enviando notificação de recebimento para cliente: ${customerPhone}`);
     // Open WhatsApp to send received notification
     window.open(whatsappUrl, '_blank');
   };

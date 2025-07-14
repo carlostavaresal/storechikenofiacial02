@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -17,12 +16,16 @@ import OrderActionButtons from "@/components/orders/OrderActionButtons";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
+import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Integrate WhatsApp automatic sending
+  useWhatsAppIntegration();
 
   const handleOpenOrderDetails = (order: any) => {
     const formattedOrder = {
