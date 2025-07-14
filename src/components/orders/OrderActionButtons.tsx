@@ -83,11 +83,11 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
       {order.status === "processing" && (
         <Button 
           size="sm" 
-          variant="secondary" 
           onClick={handleOutForDelivery}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
         >
           <Truck className="mr-1 h-3 w-3" />
-          Saiu p/ Entrega
+          Entrega
         </Button>
       )}
       
