@@ -17,6 +17,8 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
   const [deliveryRadius, setDeliveryRadius] = useState<string>("5");
   const [deliveryFee, setDeliveryFee] = useState<string>("5.00");
   const [estimatedTime, setEstimatedTime] = useState<string>("30-45");
+  const [preparationTime, setPreparationTime] = useState<string>("25-35");
+  const [deliveryTime, setDeliveryTime] = useState<string>("15-20");
   const [addressString, setAddressString] = useState<string>("");
   const { toast } = useToast();
 
@@ -30,6 +32,8 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
         setDeliveryRadius(settings.radius || "5");
         setDeliveryFee(settings.fee || "5.00");
         setEstimatedTime(settings.estimatedTime || "30-45");
+        setPreparationTime(settings.preparationTime || "25-35");
+        setDeliveryTime(settings.deliveryTime || "15-20");
       }
     } catch (error) {
       console.error("Error loading delivery settings:", error);
@@ -60,13 +64,15 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
       radius: deliveryRadius,
       fee: deliveryFee,
       estimatedTime: estimatedTime,
+      preparationTime: preparationTime,
+      deliveryTime: deliveryTime,
     };
     localStorage.setItem("deliverySettings", JSON.stringify(settings));
     onSave(deliveryRadius, deliveryFee);
     
     toast({
       title: "Configurações salvas",
-      description: `Raio de ${deliveryRadius}km, taxa de R$ ${deliveryFee} e tempo de ${estimatedTime} min salvos.`,
+      description: `Todos os tempos e configurações foram salvos com sucesso.`,
     });
   };
 
@@ -151,7 +157,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
             </div>
 
             {/* Configurações */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="deliveryRadius" className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
@@ -193,7 +199,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
               <div className="space-y-2">
                 <Label htmlFor="estimatedTime" className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  Tempo Estimado (min)
+                  Tempo Total Estimado (min)
                 </Label>
                 <Input
                   id="estimatedTime"
@@ -203,7 +209,41 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   placeholder="Ex: 30-45"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Tempo de entrega estimado
+                  Tempo total do pedido até entrega
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preparationTime" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Tempo de Preparo (min)
+                </Label>
+                <Input
+                  id="preparationTime"
+                  type="text"
+                  value={preparationTime}
+                  onChange={(e) => setPreparationTime(e.target.value)}
+                  placeholder="Ex: 25-35"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tempo para preparar o pedido
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="deliveryTime" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Tempo de Entrega (min)
+                </Label>
+                <Input
+                  id="deliveryTime"
+                  type="text"
+                  value={deliveryTime}
+                  onChange={(e) => setDeliveryTime(e.target.value)}
+                  placeholder="Ex: 15-20"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tempo para entrega após sair da loja
                 </p>
               </div>
             </div>

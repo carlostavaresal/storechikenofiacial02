@@ -12,6 +12,30 @@ export const useCustomerNotifications = () => {
     return numericOnly;
   };
 
+  // Função para obter configurações de entrega do localStorage
+  const getDeliverySettings = () => {
+    try {
+      const savedSettings = localStorage.getItem("deliverySettings");
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return {
+          estimatedTime: settings.estimatedTime || "30-45",
+          preparationTime: settings.preparationTime || "25-35",
+          deliveryTime: settings.deliveryTime || "15-20"
+        };
+      }
+    } catch (error) {
+      console.error("Error loading delivery settings:", error);
+    }
+    
+    // Valores padrão se não houver configurações salvas
+    return {
+      estimatedTime: "30-45",
+      preparationTime: "25-35", 
+      deliveryTime: "15-20"
+    };
+  };
+
   const sendOrderConfirmation = (order: any) => {
     if (!order.customer_phone) {
       console.log('Customer phone not available for order:', order.order_number);
@@ -20,6 +44,7 @@ export const useCustomerNotifications = () => {
 
     console.log(`Enviando confirmação de pedido para: ${order.customer_name} - ${order.order_number}`);
 
+    const deliverySettings = getDeliverySettings();
     const itemsList = order.items.map((item: any) => 
       `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
@@ -39,7 +64,7 @@ ${order.customer_address}
 
 ${order.notes ? `📝 *Observações:* ${order.notes}` : ''}
 
-⏰ *Tempo estimado:* 30-45 minutos
+⏰ *Tempo estimado:* ${deliverySettings.estimatedTime} minutos
 
 Obrigado pela preferência! 🍕`;
 
@@ -59,6 +84,7 @@ Obrigado pela preferência! 🍕`;
 
     console.log(`Enviando notificação de entrega para: ${order.customer_name} - ${order.order_number}`);
 
+    const deliverySettings = getDeliverySettings();
     const message = `🚚 *PEDIDO SAIU PARA ENTREGA* - ${order.order_number}
 
 Olá ${order.customer_name}!
@@ -69,7 +95,7 @@ Seu pedido saiu para entrega e chegará em breve! 🎉
 📍 *Endereço:* ${order.customer_address}
 💰 *Total:* R$ ${order.total_amount.toFixed(2)}
 
-⏰ *Previsão de chegada:* 15-20 minutos
+⏰ *Previsão de chegada:* ${deliverySettings.deliveryTime} minutos
 
 Fique tranquilo nosso Entregador já está à caminho da sua Residência com seu Pedido! 
 Obrigado pela preferência! 🍕`;
@@ -90,6 +116,7 @@ Obrigado pela preferência! 🍕`;
 
     console.log(`Enviando notificação de recebimento para: ${order.customer_name} - ${order.order_number}`);
 
+    const deliverySettings = getDeliverySettings();
     const message = `✅ *PEDIDO RECEBIDO* - ${order.order_number}
 
 Olá ${order.customer_name}!
@@ -100,7 +127,7 @@ Recebemos seu pedido e já começamos a preparar! 👨‍🍳
 💰 *Total:* R$ ${order.total_amount.toFixed(2)}
 💳 *Pagamento:* ${order.payment_method}
 
-⏰ *Tempo estimado de preparo:* 25-35 minutos
+⏰ *Tempo estimado de preparo:* ${deliverySettings.preparationTime} minutos
 
 Em breve você receberá uma nova notificação quando o pedido sair para entrega.
 
