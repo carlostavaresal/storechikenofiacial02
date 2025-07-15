@@ -20,20 +20,20 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
 }) => {
   const { toast } = useToast();
   const { sendOrderReceived, sendDeliveryNotification } = useCustomerNotifications();
+  const [isProcessing, setIsProcessing] = React.useState(false);
 
   const handleConfirmReceived = async () => {
-    if (!order || order.status !== "pending") {
-      console.log('Order not available or not pending:', order?.status);
+    if (!order || order.status !== "pending" || isProcessing) {
+      console.log('Order not available, not pending, or already processing:', order?.status);
       return;
     }
 
+    setIsProcessing(true);
     console.log(`[ACTION] Confirmando recebimento do pedido: ${order.order_number}`);
     
     try {
-      // Update status first
       await onStatusChange(order.order_number, "processing");
       
-      // Send notification to customer after a brief delay to ensure status update
       setTimeout(() => {
         sendOrderReceived(order);
       }, 500);
@@ -51,22 +51,23 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
         description: "Erro ao confirmar pedido",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleOutForDelivery = async () => {
-    if (!order || order.status !== "processing") {
-      console.log('Order not available or not processing:', order?.status);
+    if (!order || order.status !== "processing" || isProcessing) {
+      console.log('Order not available, not processing, or already processing:', order?.status);
       return;
     }
 
+    setIsProcessing(true);
     console.log(`[ACTION] Marcando pedido como saiu para entrega: ${order.order_number}`);
     
     try {
-      // Update status first
       await onStatusChange(order.order_number, "delivered");
       
-      // Send notification to customer after a brief delay to ensure status update
       setTimeout(() => {
         sendDeliveryNotification(order);
       }, 500);
@@ -84,16 +85,19 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
         description: "Erro ao marcar saída para entrega",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleDeleteSuspicious = async () => {
-    if (!order) {
-      console.log('Order not available for deletion');
+    if (!order || isProcessing) {
+      console.log('Order not available or already processing');
       return;
     }
 
     if (window.confirm(`Tem certeza que deseja excluir o pedido ${order.order_number} por suspeita?`)) {
+      setIsProcessing(true);
       console.log(`[ACTION] Excluindo pedido suspeito: ${order.order_number}`);
       
       try {
@@ -113,6 +117,8 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           description: "Erro ao excluir pedido",
           variant: "destructive",
         });
+      } finally {
+        setIsProcessing(false);
       }
     }
   };
@@ -128,10 +134,10 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           onClick={handleConfirmReceived}
           className="bg-green-600 hover:bg-green-700 text-white"
-          disabled={!order.order_number}
+          disabled={!order.order_number || isProcessing}
         >
           <Check className="mr-1 h-3 w-3" />
-          Confirmar
+          {isProcessing ? "Confirmando..." : "Confirmar"}
         </Button>
       )}
       
@@ -140,10 +146,10 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           onClick={handleOutForDelivery}
           className="bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={!order.order_number}
+          disabled={!order.order_number || isProcessing}
         >
           <Truck className="mr-1 h-3 w-3" />
-          Entrega
+          {isProcessing ? "Enviando..." : "Entrega"}
         </Button>
       )}
       
@@ -152,10 +158,10 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           variant="destructive" 
           onClick={handleDeleteSuspicious}
-          disabled={!order.id}
+          disabled={!order.id || isProcessing}
         >
           <Trash2 className="mr-1 h-3 w-3" />
-          Excluir
+          {isProcessing ? "Excluindo..." : "Excluir"}
         </Button>
       )}
       

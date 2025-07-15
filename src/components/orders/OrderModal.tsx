@@ -14,11 +14,10 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Phone, MessageSquare, Printer, AlertTriangle, Check, Truck, Trash2 } from "lucide-react";
+import { Phone, MessageSquare, Printer, Check, Truck, Trash2 } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
 import { printOrder } from "@/lib/printUtils";
-import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 
 interface OrderItem {
   name: string;
@@ -78,20 +77,26 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
-const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange, onDeleteOrder, onOutForDelivery }) => {
+const OrderModal: React.FC<OrderModalProps> = ({ 
+  order, 
+  isOpen, 
+  onClose, 
+  onStatusChange, 
+  onDeleteOrder, 
+  onOutForDelivery 
+}) => {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     order?.paymentMethod || "cash"
   );
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!order) return null;
 
   const formatPhoneForWhatsApp = (phone: string) => {
-    // Remove non-numeric characters
     const numericOnly = phone.replace(/\D/g, "");
     
-    // Add country code if not present (assuming Brazil)
     if (numericOnly.length === 11 || numericOnly.length === 10) {
       return `55${numericOnly}`;
     }
@@ -123,7 +128,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
   };
 
   const handleSavePaymentMethod = () => {
-    // In a real app, this would update the order in the database
     toast({
       title: "Forma de pagamento salva",
       description: `Forma de pagamento definida como ${getPaymentMethodLabel(paymentMethod)}`,
@@ -141,7 +145,9 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
   };
 
   const handlePrintOrder = () => {
-    printOrder(order, 2); // Print 2 copies: one for customer and one for delivery person
+    if (!order) return;
+    
+    printOrder(order, 2);
     
     toast({
       title: "Imprimindo pedido",
@@ -149,14 +155,15 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
     });
   };
 
-  const handleStatusChange = (newStatus: Order["status"]) => {
-    if (onStatusChange) {
-      onStatusChange(order.id, newStatus);
+  const handleStatusChange = async (newStatus: Order["status"]) => {
+    if (onStatusChange && !isProcessing) {
+      setIsProcessing(true);
+      await onStatusChange(order.id, newStatus);
+      setIsProcessing(false);
     }
   };
 
   const handleConfirmReceived = () => {
-    // Marks order as processing (received and being prepared)
     if (order.status === "pending") {
       handleStatusChange("processing");
     }
@@ -168,9 +175,11 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
     }
   };
 
-  const handleDeleteOrder = () => {
-    if (onDeleteOrder) {
-      onDeleteOrder(order.id);
+  const handleDeleteOrder = async () => {
+    if (onDeleteOrder && !isProcessing) {
+      setIsProcessing(true);
+      await onDeleteOrder(order.id);
+      setIsProcessing(false);
       onClose();
     }
   };
@@ -188,7 +197,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Detalhes do Pedido {order.id}</span>
@@ -225,7 +234,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
           
           <Separator />
           
-          {/* Status update buttons */}
           <div className="space-y-3">
             <h3 className="font-medium">Ações do Pedido</h3>
             
@@ -235,9 +243,10 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
                   variant="default" 
                   onClick={handleConfirmReceived}
                   className="bg-green-600 hover:bg-green-700"
+                  disabled={isProcessing}
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  Confirmar Recebimento
+                  {isProcessing ? "Confirmando..." : "Confirmar Recebimento"}
                 </Button>
               )}
               
@@ -245,9 +254,10 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
                 <Button 
                   variant="secondary" 
                   onClick={handleMarkAsOutForDelivery}
+                  disabled={isProcessing}
                 >
                   <Truck className="mr-2 h-4 w-4" />
-                  Saiu para Entrega
+                  {isProcessing ? "Enviando..." : "Saiu para Entrega"}
                 </Button>
               )}
               
@@ -255,9 +265,10 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
                 <Button 
                   variant="outline" 
                   onClick={handleMarkAsDelivered}
+                  disabled={isProcessing}
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  Marcar como Entregue
+                  {isProcessing ? "Processando..." : "Marcar como Entregue"}
                 </Button>
               )}
               
@@ -265,19 +276,20 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
                 variant="destructive" 
                 onClick={handleDeleteOrder}
                 className="col-span-2"
+                disabled={isProcessing}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Excluir Pedido (Suspeito)
+                {isProcessing ? "Excluindo..." : "Excluir Pedido (Suspeito)"}
               </Button>
             </div>
           </div>
           
-          {/* Print button section */}
           <div>
             <Button 
               variant="outline" 
               className="w-full" 
               onClick={handlePrintOrder}
+              disabled={isProcessing}
             >
               <Printer className="mr-2 h-4 w-4" />
               Imprimir 2 vias (Cliente/Entregador)
@@ -286,7 +298,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
 
           <Separator />
           
-          {/* Utiliza o novo componente com visual destacado */}
           <PaymentMethodDisplay 
             selectedMethod={paymentMethod}
             onMethodChange={setPaymentMethod}
@@ -322,13 +333,14 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
               className="mb-2"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              disabled={isProcessing}
             />
             <div className="flex gap-2">
               <Button
                 onClick={handleWhatsAppMessage}
                 className="w-full"
                 variant="default"
-                disabled={!message || !order.phone}
+                disabled={!message || !order.phone || isProcessing}
               >
                 <Phone className="mr-2 h-4 w-4" />
                 Enviar WhatsApp
@@ -336,7 +348,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
               <Button
                 variant="outline"
                 className="w-full"
-                disabled={!message || !order.phone}
+                disabled={!message || !order.phone || isProcessing}
               >
                 <MessageSquare className="mr-2 h-4 w-4" />
                 SMS
@@ -346,7 +358,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
             Fechar
           </Button>
         </DialogFooter>

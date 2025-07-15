@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -6,8 +7,8 @@ export interface Product {
   name: string;
   description: string | null;
   price: number;
-  image_url: string | null;
   category: string | null;
+  image_url: string | null;
   is_available: boolean | null;
   created_at: string;
   updated_at: string;
@@ -16,6 +17,26 @@ export interface Product {
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProducts = async () => {
+    try {
+      setError(null);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setError(error instanceof Error ? error.message : 'Error fetching products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -37,115 +58,22 @@ export const useProducts = () => {
       )
       .subscribe();
 
+    // Listen for localStorage updates
+    const handleStorageUpdate = () => {
+      fetchProducts();
+    };
+
+    window.addEventListener('productsUpdated', handleStorageUpdate);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('productsUpdated', handleStorageUpdate);
     };
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      // Primeiro, tentar buscar do Supabase
-      const { data: supabaseProducts, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_available', true)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching products from Supabase:', error);
-        // Fallback para localStorage se houver erro
-        loadFromLocalStorage();
-        return;
-      }
-
-      if (supabaseProducts && supabaseProducts.length > 0) {
-        setProducts(supabaseProducts);
-      } else {
-        // Se não há produtos no Supabase, tentar migrar do localStorage
-        await migrateFromLocalStorage();
-      }
-    } catch (error) {
-      console.error('Error in fetchProducts:', error);
-      loadFromLocalStorage();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadFromLocalStorage = () => {
-    try {
-      const savedProducts = localStorage.getItem("products");
-      if (savedProducts) {
-        const localProducts = JSON.parse(savedProducts);
-        const formattedProducts = localProducts.map((product: any) => ({
-          id: product.id,
-          name: product.name || '',
-          description: product.description || '',
-          price: Number(product.price) || 0,
-          image_url: extractImageUrl(product.image),
-          category: product.category || "Geral",
-          is_available: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-        setProducts(formattedProducts);
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-      setProducts([]);
-    }
-  };
-
-  const migrateFromLocalStorage = async () => {
-    try {
-      const savedProducts = localStorage.getItem("products");
-      if (savedProducts) {
-        const localProducts = JSON.parse(savedProducts);
-        const productsToInsert = localProducts.map((product: any) => ({
-          name: product.name || '',
-          description: product.description || '',
-          price: Number(product.price) || 0,
-          image_url: extractImageUrl(product.image),
-          category: product.category || "Geral",
-          is_available: true
-        }));
-
-        const { data, error } = await supabase
-          .from('products')
-          .insert(productsToInsert)
-          .select();
-
-        if (error) {
-          console.error('Error migrating products:', error);
-          loadFromLocalStorage();
-        } else {
-          console.log('Products migrated successfully:', data);
-          setProducts(data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error in migration:', error);
-      loadFromLocalStorage();
-    }
-  };
-
-  const extractImageUrl = (image: any): string => {
-    if (!image) return '';
-    
-    if (typeof image === 'string') {
-      return image;
-    } else if (typeof image === 'object') {
-      if (image.value) {
-        return image.value;
-      } else if (image._type === 'String' && image.value) {
-        return image.value;
-      }
-    }
-    return '';
-  };
-
   const createProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('products')
         .insert([productData])
@@ -156,38 +84,41 @@ export const useProducts = () => {
       return data;
     } catch (error) {
       console.error('Error creating product:', error);
+      setError(error instanceof Error ? error.message : 'Error creating product');
       throw error;
     }
   };
 
-  const updateProduct = async (id: string, updates: Partial<Product>) => {
+  const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>) => {
     try {
-      const { data, error } = await supabase
+      setError(null);
+      const { error } = await supabase
         .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .update(productData)
+        .eq('id', productId);
 
       if (error) throw error;
-      return data;
+      return true;
     } catch (error) {
       console.error('Error updating product:', error);
-      throw error;
+      setError(error instanceof Error ? error.message : 'Error updating product');
+      return false;
     }
   };
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = async (productId: string) => {
     try {
+      setError(null);
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('id', id);
+        .eq('id', productId);
 
       if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error deleting product:', error);
+      setError(error instanceof Error ? error.message : 'Error deleting product');
       return false;
     }
   };
@@ -195,6 +126,7 @@ export const useProducts = () => {
   return {
     products,
     loading,
+    error,
     createProduct,
     updateProduct,
     deleteProduct,

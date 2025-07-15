@@ -12,8 +12,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FileImage, UploadCloud } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "./ProductsList";
+import { useProducts } from "@/hooks/useProducts";
 
-// Define the form schema with validation
 const editProductSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   price: z.coerce.number().positive("Preço deve ser um valor positivo"),
@@ -29,7 +29,9 @@ interface EditProductModalProps {
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange, product }) => {
   const { toast } = useToast();
+  const { updateProduct } = useProducts();
   const [imagePreview, setImagePreview] = React.useState<string>(product.image);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const imageRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof editProductSchema>>({
@@ -42,7 +44,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
     },
   });
 
-  // Update form values when product changes
   React.useEffect(() => {
     form.reset({
       name: product.name,
@@ -82,46 +83,73 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
     }
   };
 
-  const onSubmit = (values: z.infer<typeof editProductSchema>) => {
-    // Get current products from localStorage
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      
-      // Find and update the product
-      const updatedProducts = products.map((p: Product) => {
-        if (p.id === product.id) {
-          return {
-            ...p,
-            name: values.name,
-            price: values.price,
-            description: values.description,
-            category: values.category,
-            image: imagePreview,
-          };
+  const onSubmit = async (values: z.infer<typeof editProductSchema>) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Try Supabase first
+      const success = await updateProduct(product.id, {
+        name: values.name,
+        price: values.price,
+        description: values.description,
+        category: values.category,
+        image_url: imagePreview,
+        is_available: true
+      });
+
+      if (success) {
+        onOpenChange(false);
+        toast({
+          title: "Produto atualizado",
+          description: `${values.name} foi atualizado com sucesso.`,
+        });
+      } else {
+        // Fallback to localStorage
+        const savedProducts = localStorage.getItem("products");
+        if (savedProducts) {
+          const products = JSON.parse(savedProducts);
+          
+          const updatedProducts = products.map((p: Product) => {
+            if (p.id === product.id) {
+              return {
+                ...p,
+                name: values.name,
+                price: values.price,
+                description: values.description,
+                category: values.category,
+                image: imagePreview,
+              };
+            }
+            return p;
+          });
+          
+          localStorage.setItem("products", JSON.stringify(updatedProducts));
+          window.dispatchEvent(new Event("productsUpdated"));
+          
+          onOpenChange(false);
+          toast({
+            title: "Produto atualizado",
+            description: `${values.name} foi atualizado com sucesso.`,
+          });
         }
-        return p;
-      });
-      
-      // Save back to localStorage
-      localStorage.setItem("products", JSON.stringify(updatedProducts));
-      
-      // Dispatch an event to notify that products have been updated
-      window.dispatchEvent(new Event("productsUpdated"));
-      
-      // Close modal
-      onOpenChange(false);
-      
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
       toast({
-        title: "Produto atualizado",
-        description: `${values.name} foi atualizado com sucesso.`,
+        title: "Erro ao atualizar",
+        description: "Ocorreu um erro ao atualizar o produto. Tente novamente.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Produto</DialogTitle>
         </DialogHeader>
@@ -135,7 +163,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                 <FormItem>
                   <FormLabel>Nome do Produto</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -153,6 +181,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                       type="number" 
                       step="0.01" 
                       min="0"
+                      disabled={isSubmitting}
                       {...field} 
                     />
                   </FormControl>
@@ -168,7 +197,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,7 +211,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -197,7 +226,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-full max-w-full object-contain rounded"
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-center">
@@ -210,7 +239,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                 </div>
                 <div>
                   <Label htmlFor="edit-product-image" className="cursor-pointer">
-                    <div className="flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 hover:bg-accent">
+                    <div className="flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 hover:bg-accent transition-colors">
                       <UploadCloud className="h-4 w-4" />
                       <span>Trocar imagem</span>
                     </div>
@@ -220,6 +249,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
+                      disabled={isSubmitting}
                       className="hidden"
                     />
                   </Label>
@@ -235,10 +265,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+              </Button>
             </div>
           </form>
         </Form>
