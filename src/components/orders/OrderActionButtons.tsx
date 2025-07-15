@@ -22,14 +22,21 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
   const { sendOrderReceived, sendDeliveryNotification } = useCustomerNotifications();
 
   const handleConfirmReceived = async () => {
-    if (order.status === "pending") {
-      console.log(`Confirmando recebimento do pedido: ${order.order_number}`);
-      
+    if (!order || order.status !== "pending") {
+      console.log('Order not available or not pending:', order?.status);
+      return;
+    }
+
+    console.log(`[ACTION] Confirmando recebimento do pedido: ${order.order_number}`);
+    
+    try {
       // Update status first
       await onStatusChange(order.order_number, "processing");
       
-      // Send single notification to customer
-      sendOrderReceived(order);
+      // Send notification to customer after a brief delay to ensure status update
+      setTimeout(() => {
+        sendOrderReceived(order);
+      }, 500);
       
       toast({
         title: "Pedido Confirmado",
@@ -37,18 +44,32 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
       });
       
       playNotificationSound(NOTIFICATION_SOUNDS.ORDER_PROCESSING, 0.5);
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao confirmar pedido",
+        variant: "destructive",
+      });
     }
   };
 
   const handleOutForDelivery = async () => {
-    if (order.status === "processing") {
-      console.log(`Marcando pedido como saiu para entrega: ${order.order_number}`);
-      
+    if (!order || order.status !== "processing") {
+      console.log('Order not available or not processing:', order?.status);
+      return;
+    }
+
+    console.log(`[ACTION] Marcando pedido como saiu para entrega: ${order.order_number}`);
+    
+    try {
       // Update status first
       await onStatusChange(order.order_number, "delivered");
       
-      // Send single notification to customer
-      sendDeliveryNotification(order);
+      // Send notification to customer after a brief delay to ensure status update
+      setTimeout(() => {
+        sendDeliveryNotification(order);
+      }, 500);
       
       toast({
         title: "Saiu para Entrega",
@@ -56,24 +77,49 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
       });
       
       playNotificationSound(NOTIFICATION_SOUNDS.ORDER_PROCESSING, 0.5);
+    } catch (error) {
+      console.error('Error marking out for delivery:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao marcar saída para entrega",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteSuspicious = async () => {
+    if (!order) {
+      console.log('Order not available for deletion');
+      return;
+    }
+
     if (window.confirm(`Tem certeza que deseja excluir o pedido ${order.order_number} por suspeita?`)) {
-      console.log(`Excluindo pedido suspeito: ${order.order_number}`);
+      console.log(`[ACTION] Excluindo pedido suspeito: ${order.order_number}`);
       
-      await onDeleteOrder(order.id);
-      
-      toast({
-        title: "Pedido Excluído",
-        description: `Pedido ${order.order_number} foi excluído por suspeita`,
-        variant: "destructive",
-      });
-      
-      playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
+      try {
+        await onDeleteOrder(order.id);
+        
+        toast({
+          title: "Pedido Excluído",
+          description: `Pedido ${order.order_number} foi excluído por suspeita`,
+          variant: "destructive",
+        });
+        
+        playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
+      } catch (error) {
+        console.error('Error deleting order:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir pedido",
+          variant: "destructive",
+        });
+      }
     }
   };
+
+  if (!order) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -82,6 +128,7 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           onClick={handleConfirmReceived}
           className="bg-green-600 hover:bg-green-700 text-white"
+          disabled={!order.order_number}
         >
           <Check className="mr-1 h-3 w-3" />
           Confirmar
@@ -93,6 +140,7 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           onClick={handleOutForDelivery}
           className="bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={!order.order_number}
         >
           <Truck className="mr-1 h-3 w-3" />
           Entrega
@@ -104,6 +152,7 @@ const OrderActionButtons: React.FC<OrderActionButtonsProps> = ({
           size="sm" 
           variant="destructive" 
           onClick={handleDeleteSuspicious}
+          disabled={!order.id}
         >
           <Trash2 className="mr-1 h-3 w-3" />
           Excluir

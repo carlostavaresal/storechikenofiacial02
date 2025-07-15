@@ -26,6 +26,34 @@ export interface Order {
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOrders = async () => {
+    try {
+      setError(null);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform the data to match our Order interface with proper type conversion
+      const transformedOrders: Order[] = (data || []).map(row => ({
+        ...row,
+        items: Array.isArray(row.items) ? (row.items as unknown as OrderItem[]) : [],
+        notes: row.notes || null,
+        status: row.status as 'pending' | 'processing' | 'delivered' | 'cancelled'
+      }));
+      
+      setOrders(transformedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setError(error instanceof Error ? error.message : 'Error fetching orders');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -52,33 +80,9 @@ export const useOrders = () => {
     };
   }, []);
 
-  const fetchOrders = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Transform the data to match our Order interface with proper type conversion
-      const transformedOrders: Order[] = (data || []).map(row => ({
-        ...row,
-        items: Array.isArray(row.items) ? (row.items as unknown as OrderItem[]) : [],
-        notes: row.notes || null,
-        status: row.status as 'pending' | 'processing' | 'delivered' | 'cancelled'
-      }));
-      
-      setOrders(transformedOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const createOrder = async (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('orders')
         .insert([{
@@ -99,12 +103,14 @@ export const useOrders = () => {
       return data;
     } catch (error) {
       console.error('Error creating order:', error);
+      setError(error instanceof Error ? error.message : 'Error creating order');
       throw error;
     }
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
+      setError(null);
       const { error } = await supabase
         .from('orders')
         .update({ status })
@@ -114,12 +120,14 @@ export const useOrders = () => {
       return true;
     } catch (error) {
       console.error('Error updating order status:', error);
+      setError(error instanceof Error ? error.message : 'Error updating order status');
       return false;
     }
   };
 
   const deleteOrder = async (orderId: string) => {
     try {
+      setError(null);
       const { error } = await supabase
         .from('orders')
         .delete()
@@ -129,6 +137,7 @@ export const useOrders = () => {
       return true;
     } catch (error) {
       console.error('Error deleting order:', error);
+      setError(error instanceof Error ? error.message : 'Error deleting order');
       return false;
     }
   };
@@ -136,6 +145,7 @@ export const useOrders = () => {
   return {
     orders,
     loading,
+    error,
     createOrder,
     updateOrderStatus,
     deleteOrder,

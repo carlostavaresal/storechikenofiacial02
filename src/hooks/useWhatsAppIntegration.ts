@@ -12,6 +12,7 @@ export const useWhatsAppIntegration = () => {
 
   // Format WhatsApp number for proper linking
   const formatPhoneForWhatsApp = (phone: string) => {
+    if (!phone) return '';
     const numericOnly = phone.replace(/\D/g, "");
     if (numericOnly.length === 11 || numericOnly.length === 10) {
       return `55${numericOnly}`;
@@ -30,21 +31,26 @@ export const useWhatsAppIntegration = () => {
       return;
     }
 
+    if (!order?.items || !Array.isArray(order.items)) {
+      console.error('Invalid order items:', order.items);
+      return;
+    }
+
     const itemsList = order.items.map((item: any) => 
-      `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
+      `${item.quantity || 0}x ${item.name || 'Item'} - R$ ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}`
     ).join('\n');
 
-    const message = `🍕 *NOVO PEDIDO* - ${order.order_number}
+    const message = `🍕 *NOVO PEDIDO* - ${order.order_number || 'N/A'}
 
-👤 *Cliente:* ${order.customer_name}
-📞 *Telefone:* ${order.customer_phone}
-📍 *Endereço:* ${order.customer_address}
+👤 *Cliente:* ${order.customer_name || 'N/A'}
+📞 *Telefone:* ${order.customer_phone || 'N/A'}
+📍 *Endereço:* ${order.customer_address || 'N/A'}
 
 📝 *Itens:*
 ${itemsList}
 
-💰 *Total:* R$ ${order.total_amount.toFixed(2)}
-💳 *Pagamento:* ${order.payment_method}
+💰 *Total:* R$ ${(order.total_amount || 0).toFixed(2)}
+💳 *Pagamento:* ${order.payment_method || 'N/A'}
 ${order.notes ? `📋 *Observações:* ${order.notes}` : ''}
 
 ⏰ *Pedido realizado em:* ${new Date(order.created_at).toLocaleString('pt-BR')}
@@ -53,6 +59,12 @@ Por favor, confirme o recebimento deste pedido.`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappBusinessNumber = formatPhoneForWhatsApp(settings.whatsapp_number);
+    
+    if (!whatsappBusinessNumber) {
+      console.error('Invalid WhatsApp number:', settings.whatsapp_number);
+      return;
+    }
+
     const whatsappUrl = `https://wa.me/${whatsappBusinessNumber}?text=${encodedMessage}`;
     
     // Open WhatsApp Business automatically
@@ -89,8 +101,8 @@ Por favor, confirme o recebimento deste pedido.`;
       return timeDiff < twoMinutesInMs;
     });
 
-    // Process each new order
-    newOrders.forEach(order => {
+    // Process each new order (limit to prevent spam)
+    newOrders.slice(0, 3).forEach(order => {
       console.log(`Processando novo pedido: ${order.order_number}`);
       sendOrderToWhatsApp(order);
     });
@@ -99,6 +111,8 @@ Por favor, confirme o recebimento deste pedido.`;
 
   // Reset processed orders when orders list changes significantly
   useEffect(() => {
+    if (!orders || orders.length === 0) return;
+    
     const currentOrderIds = new Set(orders.map(order => order.id));
     const processedIds = Array.from(processedOrdersRef.current);
     

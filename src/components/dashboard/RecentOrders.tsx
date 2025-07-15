@@ -20,33 +20,46 @@ import { useOrders } from "@/hooks/useOrders";
 
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
-  const { orders, loading, updateOrderStatus, deleteOrder } = useOrders();
+  const { orders, loading, error, updateOrderStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenOrderDetails = (order: any) => {
+    if (!order) {
+      console.error('Invalid order for details:', order);
+      return;
+    }
+
     const formattedOrder = {
-      id: order.order_number,
-      customer: order.customer_name,
-      status: order.status,
-      total: `R$ ${order.total_amount.toFixed(2)}`,
+      id: order.order_number || '',
+      customer: order.customer_name || '',
+      status: order.status || 'pending',
+      total: `R$ ${(order.total_amount || 0).toFixed(2)}`,
       date: new Date(order.created_at),
-      items: order.items.length,
-      address: order.customer_address,
-      phone: order.customer_phone,
-      orderItems: order.items,
+      items: Array.isArray(order.items) ? order.items.length : 0,
+      address: order.customer_address || '',
+      phone: order.customer_phone || '',
+      orderItems: Array.isArray(order.items) ? order.items : [],
       paymentMethod: order.payment_method as PaymentMethod,
-      notes: order.notes
+      notes: order.notes || ''
     };
     setSelectedOrder(formattedOrder);
     setIsModalOpen(true);
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
-    const order = orders.find(o => o.order_number === orderId);
-    if (!order) return;
+    if (!orderId || !newStatus) {
+      console.error('Invalid parameters for status change:', { orderId, newStatus });
+      return;
+    }
 
-    console.log(`Atualizando status do pedido ${orderId} para ${newStatus}`);
+    const order = orders.find(o => o.order_number === orderId);
+    if (!order) {
+      console.error('Order not found:', orderId);
+      return;
+    }
+
+    console.log(`[RECENT ORDERS] Atualizando status do pedido ${orderId} para ${newStatus}`);
     const success = await updateOrderStatus(order.id, newStatus as any);
     
     if (success) {
@@ -54,17 +67,34 @@ const RecentOrders: React.FC = () => {
         title: "Status Atualizado",
         description: `Pedido ${orderId} foi atualizado com sucesso`,
       });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status do pedido",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    console.log(`Excluindo pedido: ${orderId}`);
+    if (!orderId) {
+      console.error('Invalid order ID for deletion:', orderId);
+      return;
+    }
+
+    console.log(`[RECENT ORDERS] Excluindo pedido: ${orderId}`);
     const success = await deleteOrder(orderId);
     
     if (success) {
       toast({
         title: "Pedido Excluído",
         description: "Pedido foi excluído com sucesso",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir pedido",
         variant: "destructive",
       });
     }
@@ -83,7 +113,20 @@ const RecentOrders: React.FC = () => {
     );
   }
 
-  const recentOrders = orders.slice(0, 5);
+  if (error) {
+    return (
+      <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <h2 className="font-semibold">Pedidos Recentes</h2>
+        </div>
+        <div className="p-6 text-center text-red-600">
+          <p>Erro ao carregar pedidos: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const recentOrders = (orders || []).slice(0, 5);
 
   return (
     <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
@@ -125,9 +168,9 @@ const RecentOrders: React.FC = () => {
                     order.status === "processing" ? "bg-blue-50 border-l-4 border-l-blue-400" : ""
                   }`}
                 >
-                  <TableCell className="font-medium">{order.order_number}</TableCell>
-                  <TableCell className="font-medium">{order.customer_name}</TableCell>
-                  <TableCell className="font-medium">R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium">{order.order_number || 'N/A'}</TableCell>
+                  <TableCell className="font-medium">{order.customer_name || 'N/A'}</TableCell>
+                  <TableCell className="font-medium">R$ {(order.total_amount || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-sm">
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>
@@ -154,19 +197,21 @@ const RecentOrders: React.FC = () => {
         )}
       </div>
 
-      <OrderModal 
-        order={selectedOrder}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onStatusChange={handleStatusChange}
-        onDeleteOrder={handleDeleteOrder}
-        onOutForDelivery={(orderId) => {
-          const order = orders.find(o => o.order_number === orderId);
-          if (order) {
-            handleStatusChange(orderId, "delivered");
-          }
-        }}
-      />
+      {selectedOrder && (
+        <OrderModal 
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onStatusChange={handleStatusChange}
+          onDeleteOrder={handleDeleteOrder}
+          onOutForDelivery={(orderId) => {
+            const order = orders.find(o => o.order_number === orderId);
+            if (order) {
+              handleStatusChange(orderId, "delivered");
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
