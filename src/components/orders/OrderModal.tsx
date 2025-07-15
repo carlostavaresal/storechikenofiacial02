@@ -17,7 +17,9 @@ import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Phone, MessageSquare, Printer, Check, Truck, Trash2 } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
+import PaymentStatusBadge from "./PaymentStatusBadge";
 import { printOrder } from "@/lib/printUtils";
+import { useOrders } from "@/hooks/useOrders";
 
 interface OrderItem {
   name: string;
@@ -36,6 +38,8 @@ interface Order {
   orderItems?: OrderItem[];
   address?: string;
   paymentMethod?: PaymentMethod;
+  paymentStatus?: string;
+  notes?: string;
 }
 
 interface OrderModalProps {
@@ -86,6 +90,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
   onOutForDelivery 
 }) => {
   const { toast } = useToast();
+  const { updatePaymentStatus } = useOrders();
   const [message, setMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     order?.paymentMethod || "cash"
@@ -132,6 +137,36 @@ const OrderModal: React.FC<OrderModalProps> = ({
       title: "Forma de pagamento salva",
       description: `Forma de pagamento definida como ${getPaymentMethodLabel(paymentMethod)}`,
     });
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!order.id || isProcessing) return;
+
+    setIsProcessing(true);
+    try {
+      const success = await updatePaymentStatus(order.id, 'paid');
+      
+      if (success) {
+        toast({
+          title: "Pagamento Confirmado",
+          description: "Pedido marcado como pago",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar status de pagamento",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status de pagamento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getPaymentMethodLabel = (method: PaymentMethod): string => {
@@ -201,9 +236,11 @@ const OrderModal: React.FC<OrderModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Detalhes do Pedido {order.id}</span>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {getStatusLabel(order.status)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusBadgeVariant(order.status)}>
+                {getStatusLabel(order.status)}
+              </Badge>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Pedido de {order.customer} • {formatDate(order.date)}
@@ -232,6 +269,19 @@ const OrderModal: React.FC<OrderModalProps> = ({
             <span>{order.total}</span>
           </div>
           
+          <Separator />
+
+          {/* Status do Pagamento */}
+          <div>
+            <h3 className="font-medium mb-2">Status do Pagamento</h3>
+            <PaymentStatusBadge 
+              paymentStatus={order.paymentStatus || 'pending'}
+              paymentMethod={order.paymentMethod}
+              onMarkAsPaid={handleMarkAsPaid}
+              showActions={true}
+            />
+          </div>
+
           <Separator />
           
           <div className="space-y-3">

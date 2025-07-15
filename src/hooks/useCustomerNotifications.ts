@@ -13,7 +13,6 @@ export const useCustomerNotifications = () => {
     return numericOnly;
   };
 
-  // Função para obter configurações de entrega do localStorage
   const getDeliverySettings = () => {
     try {
       const savedSettings = localStorage.getItem("deliverySettings");
@@ -29,12 +28,27 @@ export const useCustomerNotifications = () => {
       console.error("Error loading delivery settings:", error);
     }
     
-    // Valores padrão se não houver configurações salvas
     return {
       estimatedTime: "40",
       preparationTime: "25-35", 
       deliveryTime: "15-20"
     };
+  };
+
+  const getPixInstructions = (paymentMethod: string) => {
+    if (paymentMethod === 'pix' && settings?.pix_enabled && settings?.pix_email) {
+      return `\n💳 *INSTRUÇÕES PIX:*
+🔑 *Chave PIX (Email):* ${settings.pix_email}
+📱 *Para pagar:*
+1. Abra seu app bancário
+2. Escolha PIX
+3. Cole a chave: ${settings.pix_email}
+4. Confirme o valor: R$ {total}
+5. Finalize o pagamento
+
+⚠️ *IMPORTANTE:* Após realizar o pagamento, envie o comprovante para confirmar o pedido!`;
+    }
+    return '';
   };
 
   const sendOrderConfirmation = (order: any) => {
@@ -56,6 +70,8 @@ export const useCustomerNotifications = () => {
       `${item.quantity || 0}x ${item.name || 'Item'} - R$ ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}`
     ).join('\n');
 
+    const pixInstructions = getPixInstructions(order.payment_method).replace('{total}', (order.total_amount || 0).toFixed(2));
+
     const message = `✅ *PEDIDO CONFIRMADO* - ${order.order_number || 'N/A'}
 
 Olá ${order.customer_name || 'Cliente'}! Seu pedido foi confirmado com sucesso.
@@ -71,7 +87,7 @@ ${order.customer_address || 'N/A'}
 
 ${order.notes ? `📝 *Observações:* ${order.notes}` : ''}
 
-⏰ *Tempo estimado:* ${deliverySettings.estimatedTime} minutos
+⏰ *Tempo estimado:* ${deliverySettings.estimatedTime} minutos${pixInstructions}
 
 Obrigado pela preferência! 🍕`;
 
@@ -136,6 +152,8 @@ Obrigado pela preferência! 🍕`;
     console.log(`[RECEBIDO] Enviando notificação de recebimento para: ${order.customer_name} - ${order.order_number}`);
 
     const deliverySettings = getDeliverySettings();
+    const pixInstructions = getPixInstructions(order.payment_method).replace('{total}', (order.total_amount || 0).toFixed(2));
+
     const message = `✅ *PEDIDO RECEBIDO* - ${order.order_number || 'N/A'}
 
 Olá ${order.customer_name || 'Cliente'}!
@@ -146,7 +164,7 @@ Recebemos seu pedido e já começamos a preparar! 👨‍🍳
 💰 *Total:* R$ ${(order.total_amount || 0).toFixed(2)}
 💳 *Pagamento:* ${order.payment_method || 'N/A'}
 
-⏰ *Tempo estimado de preparo:* ${deliverySettings.preparationTime} minutos
+⏰ *Tempo estimado de preparo:* ${deliverySettings.preparationTime} minutos${pixInstructions}
 
 Em breve você receberá uma nova notificação quando o pedido sair para entrega.
 

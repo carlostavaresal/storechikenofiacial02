@@ -22,6 +22,8 @@ export type Database = {
           delivery_fee: number | null
           id: string
           minimum_order: number | null
+          pix_email: string | null
+          pix_enabled: boolean | null
           updated_at: string
           whatsapp_number: string
         }
@@ -32,6 +34,8 @@ export type Database = {
           delivery_fee?: number | null
           id?: string
           minimum_order?: number | null
+          pix_email?: string | null
+          pix_enabled?: boolean | null
           updated_at?: string
           whatsapp_number: string
         }
@@ -42,6 +46,8 @@ export type Database = {
           delivery_fee?: number | null
           id?: string
           minimum_order?: number | null
+          pix_email?: string | null
+          pix_enabled?: boolean | null
           updated_at?: string
           whatsapp_number?: string
         }
@@ -57,7 +63,9 @@ export type Database = {
           items: Json
           notes: string | null
           order_number: string
+          paid_at: string | null
           payment_method: string
+          payment_status: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -71,7 +79,9 @@ export type Database = {
           items: Json
           notes?: string | null
           order_number: string
+          paid_at?: string | null
           payment_method: string
+          payment_status?: string | null
           status?: string
           total_amount: number
           updated_at?: string
@@ -85,7 +95,9 @@ export type Database = {
           items?: Json
           notes?: string | null
           order_number?: string
+          paid_at?: string | null
           payment_method?: string
+          payment_status?: string | null
           status?: string
           total_amount?: number
           updated_at?: string

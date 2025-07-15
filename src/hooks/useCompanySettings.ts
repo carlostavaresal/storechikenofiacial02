@@ -9,6 +9,8 @@ export interface CompanySettings {
   company_address?: string | null;
   delivery_fee?: number | null;
   minimum_order?: number | null;
+  pix_email?: string | null;
+  pix_enabled?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,7 +50,6 @@ export const useCompanySettings = () => {
 
         if (error) throw error;
       } else {
-        // Ensure whatsapp_number is provided for new records
         if (!newSettings.whatsapp_number) {
           throw new Error('WhatsApp number is required');
         }
@@ -60,7 +61,9 @@ export const useCompanySettings = () => {
             company_name: newSettings.company_name,
             company_address: newSettings.company_address,
             delivery_fee: newSettings.delivery_fee,
-            minimum_order: newSettings.minimum_order
+            minimum_order: newSettings.minimum_order,
+            pix_email: newSettings.pix_email,
+            pix_enabled: newSettings.pix_enabled || false
           }]);
 
         if (error) throw error;

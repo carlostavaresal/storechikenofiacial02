@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import PaymentMethodDisplay from "@/components/payment/PaymentMethodDisplay";
 import PaymentKeysConfiguration from "@/components/payment/PaymentKeysConfiguration";
+import PixConfiguration from "@/components/payment/PixConfiguration";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 
 const PaymentMethods: React.FC = () => {
@@ -22,7 +23,6 @@ const PaymentMethods: React.FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("cash");
 
   const handleSavePaymentMethod = () => {
-    // Em uma aplicação real, isso salvaria no banco de dados
     toast({
       title: "Configuração salva",
       description: "Suas preferências de pagamento foram atualizadas.",
@@ -30,7 +30,6 @@ const PaymentMethods: React.FC = () => {
   };
 
   const handleSavePaymentKeys = (keys: any) => {
-    // Em uma aplicação real, isso salvaria as chaves no banco de dados
     console.log("Chaves de pagamento salvas:", keys);
     toast({
       title: "Chaves salvas",
@@ -66,6 +65,9 @@ const PaymentMethods: React.FC = () => {
         <Separator />
 
         <div className="grid gap-6">
+          {/* Configuração PIX */}
+          <PixConfiguration />
+
           {/* Configuração de Chaves de Pagamento */}
           <PaymentKeysConfiguration onSave={handleSavePaymentKeys} />
 

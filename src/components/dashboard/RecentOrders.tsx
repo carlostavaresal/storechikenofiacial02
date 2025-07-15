@@ -14,13 +14,14 @@ import { Eye } from "lucide-react";
 import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
 import OrderActionButtons from "@/components/orders/OrderActionButtons";
+import PaymentStatusBadge from "@/components/orders/PaymentStatusBadge";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
-  const { orders, loading, error, updateOrderStatus, deleteOrder } = useOrders();
+  const { orders, loading, error, updateOrderStatus, updatePaymentStatus, deleteOrder } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,6 +42,7 @@ const RecentOrders: React.FC = () => {
       phone: order.customer_phone || '',
       orderItems: Array.isArray(order.items) ? order.items : [],
       paymentMethod: order.payment_method as PaymentMethod,
+      paymentStatus: order.payment_status,
       notes: order.notes || ''
     };
     setSelectedOrder(formattedOrder);
@@ -71,6 +73,30 @@ const RecentOrders: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao atualizar status do pedido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentStatusChange = async (orderId: string, paymentStatus: string) => {
+    const order = orders.find(o => o.order_number === orderId);
+    if (!order) {
+      console.error('Order not found:', orderId);
+      return;
+    }
+
+    console.log(`[RECENT ORDERS] Atualizando status de pagamento do pedido ${orderId} para ${paymentStatus}`);
+    const success = await updatePaymentStatus(order.id, paymentStatus as any);
+    
+    if (success) {
+      toast({
+        title: "Pagamento Atualizado",
+        description: `Status de pagamento do pedido ${orderId} foi atualizado`,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status de pagamento",
         variant: "destructive",
       });
     }
@@ -152,6 +178,7 @@ const RecentOrders: React.FC = () => {
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Ações</TableHead>
                 <TableHead>Ver</TableHead>
@@ -171,6 +198,14 @@ const RecentOrders: React.FC = () => {
                   <TableCell className="font-medium">{order.order_number || 'N/A'}</TableCell>
                   <TableCell className="font-medium">{order.customer_name || 'N/A'}</TableCell>
                   <TableCell className="font-medium">R$ {(order.total_amount || 0).toFixed(2)}</TableCell>
+                  <TableCell>
+                    <PaymentStatusBadge 
+                      paymentStatus={order.payment_status || 'pending'}
+                      paymentMethod={order.payment_method}
+                      onMarkAsPaid={() => handlePaymentStatusChange(order.order_number, 'paid')}
+                      showActions={true}
+                    />
+                  </TableCell>
                   <TableCell className="text-sm">
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>
