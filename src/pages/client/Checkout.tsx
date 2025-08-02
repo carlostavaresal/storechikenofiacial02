@@ -1,16 +1,16 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector';
 import { useToast } from '@/hooks/use-toast';
+import { ShoppingCart, MapPin, Phone, User, CreditCard } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
 import { useInputValidation } from '@/hooks/useInputValidation';
-import { ShoppingCart, MapPin, CreditCard } from 'lucide-react';
+import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector';
 
 interface CartItem {
   id: string;
@@ -19,12 +19,13 @@ interface CartItem {
   quantity: number;
 }
 
-const Checkout = () => {
+const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createOrder } = useOrders();
-  const { sanitizeString, validatePhone, validateEmail } = useInputValidation();
-  
+  const { createOrder, loading } = useOrders();
+  const { validateAndSanitize, sanitizeString, sanitizePhone, sanitizeEmail, schemas } = useInputValidation();
+
+  // Form states
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -33,78 +34,85 @@ const Checkout = () => {
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get cart items from localStorage (this is client-side data, not sensitive)
-  const cartItems: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
-  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Get cart items from localStorage
+  const getCartItems = (): CartItem[] => {
+    try {
+      const cartData = localStorage.getItem('cart');
+      return cartData ? JSON.parse(cartData) : [];
+    } catch (error) {
+      console.error('Error loading cart:', error);
+      return [];
+    }
+  };
+
+  const cartItems = getCartItems();
+  const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate inputs using the security hook
-    const sanitizedName = sanitizeString(customerName);
-    const sanitizedAddress = sanitizeString(deliveryAddress);
-    const sanitizedObservations = sanitizeString(observations);
-    
-    if (!validatePhone(customerPhone)) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Número de telefone inválido',
-      });
-      return;
-    }
-    
-    if (customerEmail && !validateEmail(customerEmail)) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Email inválido',
-      });
-      return;
-    }
-
-    if (!sanitizedName || !customerPhone || !sanitizedAddress) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Preencha todos os campos obrigatórios',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      // Sanitize inputs
+      const sanitizedName = sanitizeString(customerName);
+      const sanitizedPhone = sanitizePhone(customerPhone);
+      const sanitizedEmail = sanitizeEmail(customerEmail);
+      const sanitizedAddress = sanitizeString(deliveryAddress);
+      const sanitizedObservations = sanitizeString(observations);
+
+      // Validate required fields
+      if (!sanitizedName || !sanitizedPhone || !sanitizedAddress) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha nome, telefone e endereço",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (cartItems.length === 0) {
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione itens ao carrinho antes de finalizar o pedido",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create order data matching the Order interface
       const orderData = {
         customer_name: sanitizedName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail || '',
-        delivery_address: sanitizedAddress,
-        items: cartItems,
-        total,
+        customer_phone: sanitizedPhone,
+        customer_address: sanitizedAddress,
+        items: cartItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        total_amount: totalAmount,
         payment_method: paymentMethod,
         payment_status: 'pending' as const,
-        observations: sanitizedObservations,
+        notes: sanitizedObservations || null,
         status: 'pending' as const
       };
 
       await createOrder(orderData);
-      
+
       // Clear cart
       localStorage.removeItem('cart');
-      
+
       toast({
-        title: 'Pedido realizado!',
-        description: 'Seu pedido foi enviado com sucesso.',
+        title: "Pedido realizado com sucesso!",
+        description: "Você receberá uma confirmação em breve via WhatsApp",
       });
-      
-      navigate('/client/success');
+
+      navigate('/success');
     } catch (error) {
-      console.error('Erro ao criar pedido:', error);
+      console.error('Error creating order:', error);
       toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível realizar o pedido.',
+        title: "Erro ao criar pedido",
+        description: "Tente novamente em alguns instantes",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -114,13 +122,19 @@ const Checkout = () => {
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container mx-auto px-4">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="text-center py-8">
-              <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-xl font-semibold mb-2">Carrinho vazio</h2>
-              <p className="text-gray-600 mb-4">Adicione alguns produtos antes de finalizar o pedido.</p>
-              <Button onClick={() => navigate('/client')}>
+        <div className="max-w-2xl mx-auto px-4">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <ShoppingCart className="h-6 w-6" />
+                Carrinho Vazio
+              </CardTitle>
+              <CardDescription>
+                Adicione itens ao seu carrinho antes de finalizar o pedido
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button onClick={() => navigate('/cardapio')}>
                 Ver Cardápio
               </Button>
             </CardContent>
@@ -132,35 +146,68 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Finalizar Pedido
-            </CardTitle>
-            <CardDescription>
-              Preencha seus dados para confirmar o pedido
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Customer Information */}
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Order Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-6 w-6" />
+                Resumo do Pedido
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Dados do Cliente</h3>
-                
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-gray-600">Qtd: {item.quantity}</p>
+                    </div>
+                    <p className="font-medium">
+                      R$ {(item.price * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total:</span>
+                    <span>R$ {totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Checkout Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados para Entrega</CardTitle>
+              <CardDescription>
+                Preencha os dados abaixo para finalizar seu pedido
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo *</Label>
+                  <Label htmlFor="name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Nome Completo *
+                  </Label>
                   <Input
                     id="name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Seu nome completo"
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone *</Label>
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Telefone *
+                  </Label>
                   <Input
                     id="phone"
                     value={customerPhone}
@@ -169,7 +216,7 @@ const Checkout = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email (opcional)</Label>
                   <Input
@@ -177,80 +224,58 @@ const Checkout = () => {
                     type="email"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="seu-email@exemplo.com"
                   />
                 </div>
-              </div>
 
-              {/* Delivery Address */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Endereço de Entrega
-                </h3>
-                
                 <div className="space-y-2">
-                  <Label htmlFor="address">Endereço Completo *</Label>
+                  <Label htmlFor="address" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Endereço de Entrega *
+                  </Label>
                   <Textarea
                     id="address"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="Rua, número, complemento, bairro, cidade"
+                    placeholder="Rua, número, bairro, cidade - CEP"
                     required
+                    rows={3}
                   />
                 </div>
-              </div>
 
-              {/* Payment Method */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Forma de Pagamento
-                </h3>
-                
-                <PaymentMethodSelector
-                  value={paymentMethod}
-                  onChange={setPaymentMethod}
-                />
-              </div>
-
-              {/* Observations */}
-              <div className="space-y-2">
-                <Label htmlFor="observations">Observações (opcional)</Label>
-                <Textarea
-                  id="observations"
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                  placeholder="Alguma observação sobre o pedido..."
-                />
-              </div>
-
-              {/* Order Summary */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">Resumo do Pedido</h3>
                 <div className="space-y-2">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.name} x{item.quantity}</span>
-                      <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>Total</span>
-                    <span>R$ {total.toFixed(2)}</span>
-                  </div>
+                  <Label className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Forma de Pagamento
+                  </Label>
+                  <PaymentMethodSelector
+                    selectedMethod={paymentMethod}
+                    onMethodChange={setPaymentMethod}
+                  />
                 </div>
-              </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Processando...' : 'Confirmar Pedido'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="observations">Observações (opcional)</Label>
+                  <Textarea
+                    id="observations"
+                    value={observations}
+                    onChange={(e) => setObservations(e.target.value)}
+                    placeholder="Instruções especiais, ponto de referência, etc."
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting || loading}
+                >
+                  {isSubmitting ? 'Finalizando...' : 'Finalizar Pedido'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
