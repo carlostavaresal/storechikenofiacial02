@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useInputValidation } from './useInputValidation';
 
 export interface OrderItem {
   name: string;
@@ -26,6 +26,7 @@ export interface Order {
 }
 
 export const useOrders = () => {
+  const { validateAndSanitize, schemas } = useInputValidation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,18 +86,29 @@ export const useOrders = () => {
   const createOrder = async (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>) => {
     try {
       setError(null);
+      
+      // Validar dados de entrada
+      const validation = validateAndSanitize(schemas.order, orderData);
+      if (!validation.success) {
+        const errorMessage = validation.errors?.join(', ') || 'Dados inválidos';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const validatedData = validation.data!;
+      
       const { data, error } = await supabase
         .from('orders')
         .insert([{
-          customer_name: orderData.customer_name,
-          customer_phone: orderData.customer_phone,
-          customer_address: orderData.customer_address,
-          items: orderData.items as any,
-          total_amount: orderData.total_amount,
-          payment_method: orderData.payment_method,
-          payment_status: orderData.payment_status || 'pending',
-          notes: orderData.notes,
-          status: orderData.status,
+          customer_name: validatedData.customer_name,
+          customer_phone: validatedData.customer_phone,
+          customer_address: validatedData.customer_address,
+          items: validatedData.items as any,
+          total_amount: validatedData.total_amount,
+          payment_method: validatedData.payment_method,
+          payment_status: validatedData.payment_status || 'pending',
+          notes: validatedData.notes,
+          status: validatedData.status,
           order_number: ''
         }])
         .select()
@@ -106,7 +118,8 @@ export const useOrders = () => {
       return data;
     } catch (error) {
       console.error('Error creating order:', error);
-      setError(error instanceof Error ? error.message : 'Error creating order');
+      const errorMessage = error instanceof Error ? error.message : 'Error creating order';
+      setError(errorMessage);
       throw error;
     }
   };

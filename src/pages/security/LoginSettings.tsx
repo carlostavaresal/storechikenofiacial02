@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Key, Eye, EyeOff } from "lucide-react";
+import { Lock, Key, Eye, EyeOff, Shield, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginSettings: React.FC = () => {
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   
   const [currentPassword, setCurrentPassword] = useState("");
-  const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -24,66 +24,9 @@ const LoginSettings: React.FC = () => {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChangeUsername = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!currentPassword) {
-      toast({
-        title: "Erro",
-        description: "Digite sua senha atual para confirmar a mudança.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!newUsername) {
-      toast({
-        title: "Erro",
-        description: "O novo nome de usuário não pode ser vazio.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // Simulating API request
-    setTimeout(() => {
-      // Validate current password (in a real app this would be done on the server)
-      if (currentPassword === "admin123") {
-        // Update username in localStorage for demo purposes
-        localStorage.setItem("deliveryUsername", newUsername);
-        
-        toast({
-          title: "Nome de usuário atualizado",
-          description: "Seu nome de usuário foi alterado com sucesso.",
-        });
-        
-        setCurrentPassword("");
-        setNewUsername("");
-      } else {
-        toast({
-          title: "Erro",
-          description: "Senha atual incorreta.",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!currentPassword) {
-      toast({
-        title: "Erro",
-        description: "Digite sua senha atual para confirmar a mudança.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!newPassword) {
       toast({
         title: "Erro",
@@ -102,10 +45,10 @@ const LoginSettings: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       toast({
         title: "Erro",
-        description: "A nova senha deve ter pelo menos 6 caracteres.",
+        description: "A nova senha deve ter pelo menos 8 caracteres.",
         variant: "destructive",
       });
       return;
@@ -113,13 +56,18 @@ const LoginSettings: React.FC = () => {
 
     setIsLoading(true);
     
-    // Simulating API request
-    setTimeout(() => {
-      // Validate current password (in a real app this would be done on the server)
-      if (currentPassword === "admin123") {
-        // Update password in AuthContext for demo purposes
-        localStorage.setItem("deliveryPassword", newPassword);
-        
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
         toast({
           title: "Senha atualizada",
           description: "Sua senha foi alterada com sucesso.",
@@ -128,86 +76,60 @@ const LoginSettings: React.FC = () => {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-      } else {
-        toast({
-          title: "Erro",
-          description: "Senha atual incorreta.",
-          variant: "destructive",
-        });
       }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao alterar senha.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
-
-  // Update AuthContext to use the new credentials
-  React.useEffect(() => {
-    const updateAuthContext = () => {
-      // This would be handled by the AuthContext in a real app
-      // For now we just make sure the localStorage values are being used
-    };
-    
-    updateAuthContext();
-  }, []);
 
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 space-y-8">
-        <h1 className="text-3xl font-bold mb-6">Configurações de Login</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <Shield className="h-8 w-8 text-green-600" />
+          <div>
+            <h1 className="text-3xl font-bold">Configurações de Segurança</h1>
+            <p className="text-muted-foreground">Sistema seguro com autenticação Supabase</p>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Change Username */}
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Security Status */}
+          <Card className="border-green-200 bg-green-50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" /> Alterar Nome de Usuário
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <Shield className="h-5 w-5" />
+                Status de Segurança
               </CardTitle>
-              <CardDescription>
-                Atualize seu nome de usuário para acessar o painel administrativo
+              <CardDescription className="text-green-700">
+                Sistema protegido com autenticação moderna
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleChangeUsername} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password-for-username">Senha Atual</Label>
-                  <div className="relative">
-                    <Input
-                      id="current-password-for-username"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Digite sua senha atual"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-800">Autenticação Supabase ativa</span>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="new-username">Novo Nome de Usuário</Label>
-                  <Input
-                    id="new-username"
-                    type="text"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    placeholder="Digite o novo nome de usuário"
-                  />
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-800">Sessões seguras</span>
                 </div>
-                
-                <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? "Alterando..." : "Alterar Nome de Usuário"}
-                </Button>
-              </form>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-800">Tokens JWT protegidos</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-800">Credenciais não expostas</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -215,40 +137,15 @@ const LoginSettings: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" /> Alterar Senha
+                <Lock className="h-5 w-5" />
+                Alterar Senha
               </CardTitle>
               <CardDescription>
-                Atualize sua senha para manter sua conta segura
+                Mantenha sua conta segura atualizando sua senha regularmente
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Senha Atual</Label>
-                  <div className="relative">
-                    <Input
-                      id="current-password"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Digite sua senha atual"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="new-password">Nova Senha</Label>
                   <div className="relative">
@@ -257,7 +154,8 @@ const LoginSettings: React.FC = () => {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Digite a nova senha"
+                      placeholder="Digite a nova senha (min. 8 caracteres)"
+                      minLength={8}
                     />
                     <Button
                       type="button"
@@ -284,6 +182,7 @@ const LoginSettings: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirme a nova senha"
+                      minLength={8}
                     />
                     <Button
                       type="button"
@@ -309,30 +208,46 @@ const LoginSettings: React.FC = () => {
           </Card>
         </div>
 
-        {/* Current Login Info */}
+        {/* Current User Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações Atuais de Login</CardTitle>
+            <CardTitle>Informações da Conta</CardTitle>
             <CardDescription>
-              Credenciais utilizadas para acessar o sistema
+              Detalhes da conta administrativa atual
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border p-4 rounded-md">
-                  <p className="text-sm font-medium text-muted-foreground">Nome de Usuário</p>
-                  <p className="font-medium">admin</p>
+                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="font-medium">{user?.email || 'Não disponível'}</p>
                 </div>
                 <div className="border p-4 rounded-md">
-                  <p className="text-sm font-medium text-muted-foreground">Senha</p>
-                  <p className="font-medium">••••••••</p>
+                  <p className="text-sm font-medium text-muted-foreground">Último Login</p>
+                  <p className="font-medium">
+                    {user?.last_sign_in_at 
+                      ? new Date(user.last_sign_in_at).toLocaleString('pt-BR')
+                      : 'Não disponível'
+                    }
+                  </p>
                 </div>
               </div>
+              
               <div className="bg-amber-50 p-4 rounded-md border border-amber-200">
-                <p className="text-amber-800 text-sm">
-                  <strong>Nota:</strong> Por razões de segurança, sua senha nunca é exibida. Se você esquecer sua senha, você precisará redefiní-la.
-                </p>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-amber-800 text-sm font-medium">
+                      Importante: Sistema de Segurança Atualizado
+                    </p>
+                    <p className="text-amber-700 text-sm mt-1">
+                      O sistema foi migrado para usar autenticação Supabase segura. 
+                      As credenciais antigas baseadas em localStorage foram removidas 
+                      por questões de segurança.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

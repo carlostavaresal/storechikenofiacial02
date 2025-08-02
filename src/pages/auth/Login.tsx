@@ -6,34 +6,49 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Package } from 'lucide-react';
+import { useToast } = '@/hooks/use-toast';
+import { Package, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-  const { isAuthenticated, login } = useAuth();
-  const [username, setUsername] = useState('');
+  const { isAuthenticated, login, loading } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      const success = login(username, password);
-      
-      if (!success) {
-        toast({
-          variant: 'destructive',
-          title: 'Falha no login',
-          description: 'Nome de usuário ou senha incorretos.',
-        });
-      }
-      
-      setIsLoading(false);
-    }, 1000); // Simulate network request
+    const { error } = await login(email, password);
+    
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Falha no login',
+        description: error,
+      });
+    } else {
+      toast({
+        title: 'Login realizado com sucesso',
+        description: 'Bem-vindo ao painel administrativo!',
+      });
+    }
+    
+    setIsLoading(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto mb-4 text-primary animate-pulse" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/" />;
@@ -41,7 +56,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-[350px]">
+      <Card className="w-[400px]">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full mb-2">
             <Package className="h-6 w-6 text-primary" />
@@ -54,38 +69,57 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Nome de usuário</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                placeholder="admin"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="admin@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground text-center">
-            Usuário padrão: admin<br />
-            Senha padrão: admin123
-          </p>
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="bg-blue-50 p-4 rounded-md border border-blue-200 w-full">
+            <p className="text-sm text-blue-800 text-center">
+              <strong>Acesso Seguro:</strong><br />
+              O sistema agora usa autenticação Supabase para maior segurança.<br />
+              Para criar uma conta de administrador, entre em contato com o suporte.
+            </p>
+          </div>
         </CardFooter>
       </Card>
     </div>
