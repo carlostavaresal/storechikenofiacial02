@@ -11,7 +11,7 @@ import { Package, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const { isAuthenticated, login, loading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,18 +21,27 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const { error } = await login(email, password);
-    
-    if (error) {
+    // Verificar credenciais hardcoded
+    if (username === 'romenia12' && password === 'romenia12') {
+      const { error } = await login(username, password);
+      
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Falha no login',
+          description: 'Usuário ou senha incorretos',
+        });
+      } else {
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Bem-vindo ao painel administrativo!',
+        });
+      }
+    } else {
       toast({
         variant: 'destructive',
         title: 'Falha no login',
-        description: error,
-      });
-    } else {
-      toast({
-        title: 'Login realizado com sucesso',
-        description: 'Bem-vindo ao painel administrativo!',
+        description: 'Usuário ou senha incorretos',
       });
     }
     
@@ -69,15 +78,15 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Usuário</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="admin@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="romenia12"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -115,9 +124,9 @@ const Login = () => {
         <CardFooter className="flex flex-col space-y-4">
           <div className="bg-blue-50 p-4 rounded-md border border-blue-200 w-full">
             <p className="text-sm text-blue-800 text-center">
-              <strong>Acesso Seguro:</strong><br />
-              O sistema agora usa autenticação Supabase para maior segurança.<br />
-              Para criar uma conta de administrador, entre em contato com o suporte.
+              <strong>Acesso do Sistema:</strong><br />
+              Usuário: romenia12<br />
+              Senha: romenia12
             </p>
           </div>
         </CardFooter>

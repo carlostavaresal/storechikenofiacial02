@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
+  login: (username: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -28,39 +28,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Verificar se há uma sessão ativa armazenada
+    const storedAuth = localStorage.getItem('admin_auth');
+    if (storedAuth) {
+      const authData = JSON.parse(storedAuth);
+      if (authData.isAuthenticated && authData.username === 'romenia12') {
+        // Simular um usuário autenticado
+        const mockUser = {
+          id: 'admin-user',
+          email: 'romenia12',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+        } as User;
+        
+        const mockSession = {
+          access_token: 'mock-token',
+          refresh_token: 'mock-refresh',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: mockUser
+        } as Session;
+        
+        setUser(mockUser);
+        setSession(mockSession);
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Verificar credenciais hardcoded
+      if (username === 'romenia12' && password === 'romenia12') {
+        // Criar uma sessão simulada
+        const mockUser = {
+          id: 'admin-user',
+          email: 'romenia12',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+        } as User;
+        
+        const mockSession = {
+          access_token: 'mock-token',
+          refresh_token: 'mock-refresh',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: mockUser
+        } as Session;
 
-      if (error) {
-        console.error('Login error:', error);
-        return { error: error.message };
+        // Armazenar no localStorage
+        localStorage.setItem('admin_auth', JSON.stringify({
+          isAuthenticated: true,
+          username: username,
+          timestamp: Date.now()
+        }));
+
+        setUser(mockUser);
+        setSession(mockSession);
+        
+        return {};
+      } else {
+        return { error: 'Usuário ou senha incorretos' };
       }
-
-      return {};
     } catch (error) {
       console.error('Login exception:', error);
       return { error: 'Erro inesperado durante o login' };
@@ -69,10 +100,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-      }
+      // Limpar dados do localStorage
+      localStorage.removeItem('admin_auth');
+      setUser(null);
+      setSession(null);
     } catch (error) {
       console.error('Logout exception:', error);
     }
