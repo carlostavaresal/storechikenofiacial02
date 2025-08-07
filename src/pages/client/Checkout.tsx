@@ -30,7 +30,7 @@ const Checkout: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'debit' | 'cash'>('cash');
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,6 +79,11 @@ const Checkout: React.FC = () => {
         return;
       }
 
+      // Map payment method to match database expectations
+      const dbPaymentMethod = paymentMethod === 'cash' ? 'dinheiro' : 
+                            paymentMethod === 'credit' ? 'cartao' : 
+                            paymentMethod === 'debit' ? 'cartao' : 'pix';
+
       // Create order data matching the Order interface
       const orderData = {
         customer_name: sanitizedName,
@@ -90,7 +95,7 @@ const Checkout: React.FC = () => {
           price: item.price
         })),
         total_amount: totalAmount,
-        payment_method: paymentMethod,
+        payment_method: dbPaymentMethod,
         payment_status: 'pending' as const,
         notes: sanitizedObservations || null,
         status: 'pending' as const
@@ -249,8 +254,8 @@ const Checkout: React.FC = () => {
                     Forma de Pagamento
                   </Label>
                   <PaymentMethodSelector
-                    selectedMethod={paymentMethod}
-                    onMethodChange={setPaymentMethod}
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
                   />
                 </div>
 
