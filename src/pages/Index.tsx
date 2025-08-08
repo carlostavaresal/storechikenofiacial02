@@ -26,7 +26,7 @@ const Index = () => {
               </Button>
             ) : (
               <Button onClick={() => navigate("/login")} size="lg">
-                Acessar Sistema
+                Área Administrativa
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
@@ -49,8 +49,8 @@ const Index = () => {
             <div>
               <h2 className="text-3xl font-bold mb-6">Cardápio Digital</h2>
               <p className="mb-6 text-muted-foreground">
-                Compartilhe seu cardápio digital com seus clientes de forma fácil e rápida.
-                Eles podem fazer pedidos diretamente pelo celular, sem precisar baixar nenhum aplicativo.
+                Faça seus pedidos de forma fácil e rápida através do nosso cardápio digital.
+                Navegue pelos nossos produtos, adicione ao carrinho e finalize seu pedido online.
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -58,9 +58,9 @@ const Index = () => {
                     <QrCode className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium">QR Code para Acesso Rápido</h3>
+                    <h3 className="font-medium">Acesso Rápido por QR Code</h3>
                     <p className="text-sm text-muted-foreground">
-                      Crie um QR code para seus clientes acessarem o cardápio rapidamente
+                      Escaneie o QR code e acesse nosso cardápio rapidamente
                     </p>
                   </div>
                 </div>
@@ -71,14 +71,14 @@ const Index = () => {
                   <div>
                     <h3 className="font-medium">Pedidos Online</h3>
                     <p className="text-sm text-muted-foreground">
-                      Receba pedidos online diretamente no seu painel de controle
+                      Faça seus pedidos online de forma simples e segura
                     </p>
                   </div>
                 </div>
               </div>
               <div className="mt-8">
-                <Button onClick={() => navigate("/client")} variant="default">
-                  Experimentar Cardápio
+                <Button onClick={() => navigate("/client")} variant="default" size="lg">
+                  Acessar Cardápio
                 </Button>
               </div>
             </div>

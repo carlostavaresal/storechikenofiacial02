@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -21,27 +21,18 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Verificar credenciais hardcoded
-    if (username === 'romenia12' && password === 'romenia12') {
-      const { error } = await login(username, password);
-      
-      if (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Falha no login',
-          description: 'Usuário ou senha incorretos',
-        });
-      } else {
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Bem-vindo ao painel administrativo!',
-        });
-      }
-    } else {
+    const { error } = await login(username, password);
+    
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Falha no login',
         description: 'Usuário ou senha incorretos',
+      });
+    } else {
+      toast({
+        title: 'Login realizado com sucesso',
+        description: 'Bem-vindo ao painel administrativo!',
       });
     }
     
@@ -60,7 +51,7 @@ const Login = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return (
@@ -72,7 +63,7 @@ const Login = () => {
           </div>
           <CardTitle className="text-2xl">Entrega Rápida</CardTitle>
           <CardDescription>
-            Entre com suas credenciais de administrador
+            Acesso restrito - Área administrativa
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -82,7 +73,7 @@ const Login = () => {
               <Input
                 id="username"
                 type="text"
-                placeholder="romenia12"
+                placeholder="Digite seu usuário"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -95,7 +86,7 @@ const Login = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="Digite sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -121,15 +112,6 @@ const Login = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="bg-blue-50 p-4 rounded-md border border-blue-200 w-full">
-            <p className="text-sm text-blue-800 text-center">
-              <strong>Acesso do Sistema:</strong><br />
-              Usuário: romenia12<br />
-              Senha: romenia12
-            </p>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
