@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -14,6 +13,7 @@ import {
   Lock,
   BookOpen,
   BadgePercent,
+  HardDrive,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,7 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Códigos Promocionais", path: "/promotions", icon: BadgePercent },
     { name: "Cardápio Online", path: "/menu", icon: BookOpen },
     { name: "Histórico", path: "/history", icon: ClipboardList },
+    { name: "Backup do Sistema", path: "/backup", icon: HardDrive },
     { name: "Configurações", path: "/settings", icon: Settings },
     { name: "Tema", path: "/settings/theme", icon: Palette },
     { name: "Segurança", path: "/security", icon: Lock },
