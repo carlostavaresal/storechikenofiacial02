@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import AddressSetupCard from "@/components/delivery/AddressSetupCard";
 import DeliveryRadiusMap from "@/components/delivery/DeliveryRadiusMap";
+import { useBusinessAddress } from "@/hooks/useBusinessAddress";
 
 // Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
@@ -17,44 +18,43 @@ export interface BusinessAddress {
 }
 
 const DeliveryAreas: React.FC = () => {
-  const [businessAddress, setBusinessAddress] = useState<BusinessAddress | null>(null);
+  const { businessAddress, updateAddress, loading } = useBusinessAddress();
   const { toast } = useToast();
-
-  // Load business address when component mounts
-  useEffect(() => {
-    try {
-      const savedAddress = localStorage.getItem("businessAddress");
-      if (savedAddress) {
-        setBusinessAddress(JSON.parse(savedAddress));
-      }
-    } catch (error) {
-      console.error("Error loading business address:", error);
-    }
-  }, []);
-
-  // Save business address to localStorage whenever it changes
-  useEffect(() => {
-    if (businessAddress) {
-      localStorage.setItem("businessAddress", JSON.stringify(businessAddress));
-    }
-  }, [businessAddress]);
 
   // Handler for updating the business address
   const handleSetBusinessAddress = (address: BusinessAddress) => {
-    setBusinessAddress(address);
-    toast({
-      title: "Endereço atualizado",
-      description: "O endereço da empresa foi atualizado com sucesso.",
-    });
+    const success = updateAddress(address);
+    if (success) {
+      toast({
+        title: "Endereço atualizado",
+        description: "O endereço da empresa foi atualizado com sucesso.",
+      });
+    } else {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Ocorreu um erro ao atualizar o endereço.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handler for saving delivery settings
   const handleSaveDeliverySettings = (radius: string, fee: string) => {
-    toast({
-      title: "Configurações salvas",
-      description: `Raio de ${radius}km e taxa de R$ ${fee} foram salvos.`,
-    });
+    console.log('Delivery settings saved:', { radius, fee });
+    // This will be handled by the DeliveryRadiusMap component
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-muted-foreground">Carregando...</div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

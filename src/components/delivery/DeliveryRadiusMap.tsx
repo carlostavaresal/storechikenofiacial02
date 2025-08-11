@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Save, MapPin, Clock, DollarSign, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BusinessAddress } from "@/pages/delivery/DeliveryAreas";
+import { useDeliverySettings } from "@/hooks/useDeliverySettings";
 
 interface DeliveryRadiusMapProps {
   address: BusinessAddress | null;
@@ -14,31 +15,25 @@ interface DeliveryRadiusMapProps {
 }
 
 const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }) => {
-  const [deliveryRadius, setDeliveryRadius] = useState<string>("5");
-  const [deliveryFee, setDeliveryFee] = useState<string>("5.00");
-  const [estimatedTime, setEstimatedTime] = useState<string>("30-45");
-  const [preparationTime, setPreparationTime] = useState<string>("25-35");
-  const [deliveryTime, setDeliveryTime] = useState<string>("15-20");
-  const [addressString, setAddressString] = useState<string>("");
   const { toast } = useToast();
+  const { settings, updateSettings, loading } = useDeliverySettings();
+  
+  const [deliveryRadius, setDeliveryRadius] = useState<string>(settings.radius);
+  const [deliveryFee, setDeliveryFee] = useState<string>(settings.fee);
+  const [estimatedTime, setEstimatedTime] = useState<string>(settings.estimatedTime);
+  const [preparationTime, setPreparationTime] = useState<string>(settings.preparationTime);
+  const [deliveryTime, setDeliveryTime] = useState<string>(settings.deliveryTime);
+  const [addressString, setAddressString] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load saved settings
+  // Update local state when settings change
   useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem("deliverySettings");
-      
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setDeliveryRadius(settings.radius || "5");
-        setDeliveryFee(settings.fee || "5.00");
-        setEstimatedTime(settings.estimatedTime || "30-45");
-        setPreparationTime(settings.preparationTime || "25-35");
-        setDeliveryTime(settings.deliveryTime || "15-20");
-      }
-    } catch (error) {
-      console.error("Error loading delivery settings:", error);
-    }
-  }, []);
+    setDeliveryRadius(settings.radius);
+    setDeliveryFee(settings.fee);
+    setEstimatedTime(settings.estimatedTime);
+    setPreparationTime(settings.preparationTime);
+    setDeliveryTime(settings.deliveryTime);
+  }, [settings]);
 
   // Generate address string when address changes
   useEffect(() => {
@@ -50,7 +45,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
     }
   }, [address]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!address) {
       toast({
         title: "Endereço necessário",
@@ -60,20 +55,45 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
       return;
     }
 
-    const settings = {
-      radius: deliveryRadius,
-      fee: deliveryFee,
-      estimatedTime: estimatedTime,
-      preparationTime: preparationTime,
-      deliveryTime: deliveryTime,
-    };
-    localStorage.setItem("deliverySettings", JSON.stringify(settings));
-    onSave(deliveryRadius, deliveryFee);
+    setIsSaving(true);
     
-    toast({
-      title: "Configurações salvas",
-      description: `Todos os tempos e configurações foram salvos com sucesso.`,
-    });
+    try {
+      console.log('Saving delivery settings:', {
+        radius: deliveryRadius,
+        fee: deliveryFee,
+        estimatedTime,
+        preparationTime,
+        deliveryTime
+      });
+
+      const success = await updateSettings({
+        radius: deliveryRadius,
+        fee: deliveryFee,
+        estimatedTime: estimatedTime,
+        preparationTime: preparationTime,
+        deliveryTime: deliveryTime,
+      });
+
+      if (success) {
+        onSave(deliveryRadius, deliveryFee);
+        
+        toast({
+          title: "Configurações salvas",
+          description: `Raio de ${deliveryRadius}km, taxa de R$ ${deliveryFee} e todos os tempos foram salvos com sucesso.`,
+        });
+      } else {
+        throw new Error('Falha ao salvar configurações');
+      }
+    } catch (error) {
+      console.error('Error saving delivery settings:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const openInGoogleMaps = () => {
@@ -82,6 +102,18 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
       window.open(url, '_blank');
     }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="text-muted-foreground">Carregando configurações...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -171,6 +203,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   value={deliveryRadius}
                   onChange={(e) => setDeliveryRadius(e.target.value)}
                   placeholder="Ex: 5"
+                  disabled={isSaving}
                 />
                 <p className="text-xs text-muted-foreground">
                   Distância máxima para entrega
@@ -190,6 +223,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   value={deliveryFee}
                   onChange={(e) => setDeliveryFee(e.target.value)}
                   placeholder="Ex: 5.00"
+                  disabled={isSaving}
                 />
                 <p className="text-xs text-muted-foreground">
                   Valor cobrado pela entrega
@@ -207,6 +241,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   value={estimatedTime}
                   onChange={(e) => setEstimatedTime(e.target.value)}
                   placeholder="Ex: 30-45"
+                  disabled={isSaving}
                 />
                 <p className="text-xs text-muted-foreground">
                   Tempo total do pedido até entrega
@@ -224,6 +259,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   value={preparationTime}
                   onChange={(e) => setPreparationTime(e.target.value)}
                   placeholder="Ex: 25-35"
+                  disabled={isSaving}
                 />
                 <p className="text-xs text-muted-foreground">
                   Tempo para preparar o pedido
@@ -241,6 +277,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   value={deliveryTime}
                   onChange={(e) => setDeliveryTime(e.target.value)}
                   placeholder="Ex: 15-20"
+                  disabled={isSaving}
                 />
                 <p className="text-xs text-muted-foreground">
                   Tempo para entrega após sair da loja
@@ -248,9 +285,13 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
               </div>
             </div>
 
-            <Button onClick={handleSave} className="flex items-center gap-2 w-full">
+            <Button 
+              onClick={handleSave} 
+              className="flex items-center gap-2 w-full"
+              disabled={isSaving}
+            >
               <Save className="h-4 w-4" />
-              Salvar Configurações de Entrega
+              {isSaving ? "Salvando..." : "Salvar Configurações de Entrega"}
             </Button>
           </div>
         )}

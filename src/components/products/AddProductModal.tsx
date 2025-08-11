@@ -28,7 +28,7 @@ interface AddProductModalProps {
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
-  const { createProduct } = useProducts();
+  const { createProduct, isAuthenticated } = useProducts();
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const imageRef = React.useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -86,7 +86,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
     setIsSubmitting(true);
 
     try {
-      // Create product using Supabase
+      console.log('Submitting product:', values);
+      
+      // Create product using the hook
       await createProduct({
         name: values.name,
         price: values.price,
@@ -96,6 +98,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
         is_available: true
       });
       
+      console.log('Product created successfully');
+      
       // Reset form
       form.reset();
       setImagePreview(null);
@@ -103,9 +107,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
       // Close modal
       onOpenChange(false);
       
+      const storageMethod = isAuthenticated ? 'Supabase' : 'localStorage';
+      
       toast({
         title: "Produto adicionado",
-        description: `${values.name} foi adicionado com sucesso.`,
+        description: `${values.name} foi adicionado com sucesso (salvo em ${storageMethod}).`,
       });
     } catch (error) {
       console.error('Error creating product:', error);
@@ -119,11 +125,25 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
     }
   };
 
+  // Reset form when modal closes
+  React.useEffect(() => {
+    if (!open) {
+      form.reset();
+      setImagePreview(null);
+      setIsSubmitting(false);
+    }
+  }, [open, form]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Produto</DialogTitle>
+          {!isAuthenticated && (
+            <p className="text-sm text-muted-foreground">
+              Os dados serão salvos localmente. Para sincronização na nuvem, faça login.
+            </p>
+          )}
         </DialogHeader>
         
         <Form {...form}>
@@ -239,6 +259,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
