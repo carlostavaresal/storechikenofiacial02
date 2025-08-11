@@ -6,13 +6,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 const CompanyInformationCard = () => {
   const { toast } = useToast();
+  const { settings, updateSettings, loading } = useCompanySettings();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState("Entrega Rápida");
+  const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [companyPhone, setCompanyPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // Load from Supabase settings first, then fallback to localStorage
+    if (settings) {
+      setCompanyName(settings.company_name || "");
+      setCompanyAddress(settings.company_address || "");
+    } else {
+      // Fallback to localStorage for backwards compatibility
+      const savedName = localStorage.getItem("companyName");
+      const savedAddress = localStorage.getItem("companyAddress");
+      if (savedName) setCompanyName(savedName);
+      if (savedAddress) setCompanyAddress(savedAddress);
+    }
+
+    // Logo and phone are still stored in localStorage for now
+    const savedLogo = localStorage.getItem("companyLogo");
+    const savedPhone = localStorage.getItem("companyPhone");
+    if (savedLogo) setLogoPreview(savedLogo);
+    if (savedPhone) setCompanyPhone(savedPhone);
+  }, [settings]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,8 +60,9 @@ const CompanyInformationCard = () => {
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
-        localStorage.setItem("companyLogo", e.target?.result as string);
+        const result = e.target?.result as string;
+        setLogoPreview(result);
+        localStorage.setItem("companyLogo", result);
         
         toast({
           title: "Logo atualizado",
@@ -49,27 +73,51 @@ const CompanyInformationCard = () => {
     }
   };
 
-  const handleSaveCompanyInfo = () => {
-    localStorage.setItem("companyName", companyName);
-    localStorage.setItem("companyAddress", companyAddress);
-    localStorage.setItem("companyPhone", companyPhone);
-    toast({
-      title: "Informações salvas",
-      description: "As informações da empresa foram atualizadas com sucesso.",
-    });
+  const handleSaveCompanyInfo = async () => {
+    setSaving(true);
+    try {
+      // Save company name and address to Supabase
+      const success = await updateSettings({
+        company_name: companyName,
+        company_address: companyAddress,
+      });
+
+      if (success) {
+        // Save phone to localStorage (for now)
+        localStorage.setItem("companyPhone", companyPhone);
+        
+        toast({
+          title: "Informações salvas",
+          description: "As informações da empresa foram atualizadas com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar as informações da empresa.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao salvar as informações.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  useEffect(() => {
-    const savedLogo = localStorage.getItem("companyLogo");
-    const savedName = localStorage.getItem("companyName");
-    const savedAddress = localStorage.getItem("companyAddress");
-    const savedPhone = localStorage.getItem("companyPhone");
-    
-    if (savedLogo) setLogoPreview(savedLogo);
-    if (savedName) setCompanyName(savedName);
-    if (savedAddress) setCompanyAddress(savedAddress);
-    if (savedPhone) setCompanyPhone(savedPhone);
-  }, []);
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações da Empresa</CardTitle>
+          <CardDescription>Carregando...</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -164,7 +212,9 @@ const CompanyInformationCard = () => {
           </div>
         </div>
         
-        <Button onClick={handleSaveCompanyInfo}>Salvar Informações</Button>
+        <Button onClick={handleSaveCompanyInfo} disabled={saving}>
+          {saving ? "Salvando..." : "Salvar Informações"}
+        </Button>
       </CardContent>
     </Card>
   );

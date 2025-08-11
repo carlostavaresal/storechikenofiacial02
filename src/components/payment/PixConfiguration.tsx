@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { Smartphone, Mail } from "lucide-react";
+import { Smartphone, Mail, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const PixConfiguration: React.FC = () => {
   const { toast } = useToast();
-  const { settings, updateSettings, loading } = useCompanySettings();
+  const { settings, updateSettings, loading, error } = useCompanySettings();
   const [pixEmail, setPixEmail] = useState(settings?.pix_email || '');
   const [pixEnabled, setPixEnabled] = useState(settings?.pix_enabled || false);
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,15 @@ const PixConfiguration: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center space-x-2">
           <Switch
             id="pix-enabled"

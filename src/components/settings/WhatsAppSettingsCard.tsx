@@ -7,11 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
-import { MessageCircle, Save } from 'lucide-react';
+import { MessageCircle, Save, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const WhatsAppSettingsCard = () => {
   const { toast } = useToast();
-  const { settings, loading, updateSettings } = useCompanySettings();
+  const { settings, loading, error, updateSettings } = useCompanySettings();
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     whatsapp_number: settings?.whatsapp_number || '',
     company_name: settings?.company_name || '',
@@ -42,25 +44,36 @@ const WhatsAppSettingsCard = () => {
       return;
     }
 
-    const success = await updateSettings({
-      whatsapp_number: formData.whatsapp_number,
-      company_name: formData.company_name,
-      company_address: formData.company_address,
-      delivery_fee: parseFloat(formData.delivery_fee) || 0,
-      minimum_order: parseFloat(formData.minimum_order) || 0
-    });
-
-    if (success) {
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações da empresa foram atualizadas com sucesso",
+    setSaving(true);
+    try {
+      const success = await updateSettings({
+        whatsapp_number: formData.whatsapp_number,
+        company_name: formData.company_name,
+        company_address: formData.company_address,
+        delivery_fee: parseFloat(formData.delivery_fee) || 0,
+        minimum_order: parseFloat(formData.minimum_order) || 0
       });
-    } else {
+
+      if (success) {
+        toast({
+          title: "Configurações salvas",
+          description: "As configurações da empresa foram atualizadas com sucesso",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar as configurações",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
       toast({
         title: "Erro",
-        description: "Erro ao salvar as configurações",
+        description: "Erro inesperado ao salvar as configurações",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -74,7 +87,7 @@ const WhatsAppSettingsCard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Carregando...</p>
+          <p>Carregando configurações...</p>
         </CardContent>
       </Card>
     );
@@ -92,6 +105,15 @@ const WhatsAppSettingsCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="whatsapp">Número do WhatsApp *</Label>
           <Input
@@ -158,9 +180,9 @@ const WhatsAppSettingsCard = () => {
           </div>
         </div>
 
-        <Button onClick={handleSave} className="w-full">
+        <Button onClick={handleSave} className="w-full" disabled={saving}>
           <Save className="h-4 w-4 mr-2" />
-          Salvar Configurações
+          {saving ? "Salvando..." : "Salvar Configurações"}
         </Button>
       </CardContent>
     </Card>
