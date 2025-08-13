@@ -24,6 +24,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 // Client-facing routes
 import CardapioPage from "./pages/client/CardapioPage";
+import ClientMenu from "./pages/client/ClientMenu";
 import Catalog from "./pages/client/Catalog";
 import Checkout from "./pages/client/Checkout";
 import Success from "./pages/client/Success";
@@ -133,6 +134,7 @@ const router = createBrowserRouter([
       },
       
       // Client-facing routes (no authentication required)
+      { path: "client", element: <ClientMenu /> }, // Nova rota principal do cardápio
       { path: "cardapio", element: <CardapioPage /> },
       { path: "catalog", element: <Catalog /> },
       { path: "checkout", element: <Checkout /> },

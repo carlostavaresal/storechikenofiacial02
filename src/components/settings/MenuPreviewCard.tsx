@@ -170,6 +170,13 @@ const MenuPreviewCard = () => {
             </DialogContent>
           </Dialog>
         </div>
+        
+        <div className="mt-4 p-3 bg-muted rounded-lg">
+          <p className="text-sm font-medium">Link do cardápio:</p>
+          <p className="text-sm text-muted-foreground font-mono">
+            {window.location.origin}/client
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

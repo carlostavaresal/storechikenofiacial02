@@ -197,6 +197,7 @@ const OnlineMenu: React.FC = () => {
   const menuUrl = `${window.location.origin}/client`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
 
+  console.log('Menu URL gerada:', menuUrl);
   console.log('Total de items:', items.length);
   console.log('Items disponíveis:', availableItems.length);
 
