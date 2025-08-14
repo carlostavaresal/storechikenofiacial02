@@ -117,13 +117,19 @@ export const useCompanySettings = () => {
       setSettings(updatedSettings);
       saveToLocalStorage(updatedSettings);
 
+      // Prepare data for Supabase - ensure whatsapp_number is provided
+      const supabaseData = {
+        ...newSettings,
+        whatsapp_number: newSettings.whatsapp_number || settings?.whatsapp_number || ''
+      };
+
       // Try to save to Supabase
       let result;
       if (settings?.id) {
         // Update existing
         result = await supabase
           .from('company_settings')
-          .update(newSettings)
+          .update(supabaseData)
           .eq('id', settings.id)
           .select()
           .single();
@@ -131,7 +137,7 @@ export const useCompanySettings = () => {
         // Insert new
         result = await supabase
           .from('company_settings')
-          .insert([newSettings])
+          .insert([supabaseData])
           .select()
           .single();
       }

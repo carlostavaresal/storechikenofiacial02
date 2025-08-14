@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -48,8 +49,6 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Histórico", path: "/history", icon: ClipboardList },
     { name: "Backup do Sistema", path: "/backup", icon: HardDrive },
     { name: "Configurações", path: "/settings", icon: Settings },
-    { name: "Tema", path: "/settings/theme", icon: Palette },
-    { name: "Segurança", path: "/security", icon: Lock },
   ];
 
   return (

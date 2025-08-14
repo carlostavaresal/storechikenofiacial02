@@ -32,10 +32,10 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/orders" element={<Orders />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/history" element={<History />} />
-        <Route path="/delivery-areas" element={<DeliveryAreas />} />
-        <Route path="/payment-methods" element={<PaymentMethods />} />
-        <Route path="/promotional-codes" element={<PromotionalCodes />} />
-        <Route path="/online-menu" element={<OnlineMenu />} />
+        <Route path="/delivery" element={<DeliveryAreas />} />
+        <Route path="/payment" element={<PaymentMethods />} />
+        <Route path="/promotions" element={<PromotionalCodes />} />
+        <Route path="/menu" element={<OnlineMenu />} />
         <Route path="/backup" element={<SystemBackup />} />
         
         {/* Client Routes */}
