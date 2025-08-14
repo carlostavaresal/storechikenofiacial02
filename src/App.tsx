@@ -26,83 +26,127 @@ import Checkout from "@/pages/client/Checkout";
 import Success from "@/pages/client/Success";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Redirect root to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected Admin Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/products" element={
-              <ProtectedRoute>
-                <Products />
-              </ProtectedRoute>
-            } />
-            <Route path="/orders" element={
-              <ProtectedRoute>
-                <Orders />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/history" element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery" element={
-              <ProtectedRoute>
-                <DeliveryAreas />
-              </ProtectedRoute>
-            } />
-            <Route path="/payment" element={
-              <ProtectedRoute>
-                <PaymentMethods />
-              </ProtectedRoute>
-            } />
-            <Route path="/promotions" element={
-              <ProtectedRoute>
-                <PromotionalCodes />
-              </ProtectedRoute>
-            } />
-            <Route path="/menu" element={
-              <ProtectedRoute>
-                <OnlineMenu />
-              </ProtectedRoute>
-            } />
-            <Route path="/backup" element={
-              <ProtectedRoute>
-                <SystemBackup />
-              </ProtectedRoute>
-            } />
-            
-            {/* Public Client Routes */}
-            <Route path="/client" element={<ClientMenu />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/success" element={<Success />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster />
-        <Sonner />
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                {/* Redirect root to login */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                
+                {/* Auth Routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected Admin Routes */}
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/products" 
+                  element={
+                    <ProtectedRoute>
+                      <Products />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/orders" 
+                  element={
+                    <ProtectedRoute>
+                      <Orders />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/history" 
+                  element={
+                    <ProtectedRoute>
+                      <History />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/delivery" 
+                  element={
+                    <ProtectedRoute>
+                      <DeliveryAreas />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/payment" 
+                  element={
+                    <ProtectedRoute>
+                      <PaymentMethods />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/promotions" 
+                  element={
+                    <ProtectedRoute>
+                      <PromotionalCodes />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/menu" 
+                  element={
+                    <ProtectedRoute>
+                      <OnlineMenu />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/backup" 
+                  element={
+                    <ProtectedRoute>
+                      <SystemBackup />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Public Client Routes */}
+                <Route path="/client" element={<ClientMenu />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/success" element={<Success />} />
+                
+                {/* Catch all route - redirect to login */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+            </div>
+            <Toaster />
+            <Sonner />
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
