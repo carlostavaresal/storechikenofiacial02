@@ -1,152 +1,48 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Index from "./pages/Index";
-import Login from "./pages/auth/Login";
+// Import pages
 import Dashboard from "./pages/dashboard/Dashboard";
 import Products from "./pages/products/Products";
 import Orders from "./pages/orders/Orders";
+import Settings from "./pages/settings/Settings";
+import History from "./pages/history/History";
 import DeliveryAreas from "./pages/delivery/DeliveryAreas";
 import PaymentMethods from "./pages/payment/PaymentMethods";
 import PromotionalCodes from "./pages/promotions/PromotionalCodes";
 import OnlineMenu from "./pages/menu/OnlineMenu";
-import History from "./pages/history/History";
-import Settings from "./pages/settings/Settings";
-import ThemeSettings from "./pages/settings/ThemeSettings";
-import LoginSettings from "./pages/security/LoginSettings";
 import SystemBackup from "./pages/backup/SystemBackup";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-// Client-facing routes
-import CardapioPage from "./pages/client/CardapioPage";
+// Client pages
 import ClientMenu from "./pages/client/ClientMenu";
-import Catalog from "./pages/client/Catalog";
 import Checkout from "./pages/client/Checkout";
 import Success from "./pages/client/Success";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <App />,
-    children: [
-      { index: true, element: <Index /> },
-      { path: "login", element: <Login /> },
-      { 
-        path: "dashboard", 
-        element: (
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "products", 
-        element: (
-          <ProtectedRoute>
-            <Products />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "orders", 
-        element: (
-          <ProtectedRoute>
-            <Orders />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "delivery", 
-        element: (
-          <ProtectedRoute>
-            <DeliveryAreas />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "payment", 
-        element: (
-          <ProtectedRoute>
-            <PaymentMethods />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "promotions", 
-        element: (
-          <ProtectedRoute>
-            <PromotionalCodes />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "menu", 
-        element: (
-          <ProtectedRoute>
-            <OnlineMenu />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "history", 
-        element: (
-          <ProtectedRoute>
-            <History />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "backup", 
-        element: (
-          <ProtectedRoute>
-            <SystemBackup />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "settings", 
-        element: (
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "settings/theme", 
-        element: (
-          <ProtectedRoute>
-            <ThemeSettings />
-          </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "security", 
-        element: (
-          <ProtectedRoute>
-            <LoginSettings />
-          </ProtectedRoute>
-        ) 
-      },
-      
-      // Client-facing routes (no authentication required)
-      { path: "client", element: <ClientMenu /> }, // Nova rota principal do cardápio
-      { path: "cardapio", element: <CardapioPage /> },
-      { path: "catalog", element: <Catalog /> },
-      { path: "checkout", element: <Checkout /> },
-      { path: "success", element: <Success /> },
-      
-      { path: "*", element: <NotFound /> },
-    ],
-  },
-]);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/delivery-areas" element={<DeliveryAreas />} />
+        <Route path="/payment-methods" element={<PaymentMethods />} />
+        <Route path="/promotional-codes" element={<PromotionalCodes />} />
+        <Route path="/online-menu" element={<OnlineMenu />} />
+        <Route path="/backup" element={<SystemBackup />} />
+        
+        {/* Client Routes */}
+        <Route path="/client" element={<ClientMenu />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/success" element={<Success />} />
+      </Routes>
+    </BrowserRouter>
   </StrictMode>
 );

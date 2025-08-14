@@ -20,6 +20,24 @@ export const useWhatsAppIntegration = () => {
     return numericOnly;
   };
 
+  const getPixInstructions = (order: any) => {
+    if (order.payment_method === 'pix' && settings?.pix_enabled && settings?.pix_email) {
+      return `\n💳 *INSTRUÇÕES PIX:*
+🔑 *Chave PIX (Email):* ${settings.pix_email}
+💰 *Valor:* R$ ${(order.total_amount || 0).toFixed(2)}
+
+📱 *Para pagar:*
+1. Abra seu app bancário
+2. Escolha PIX
+3. Cole a chave: ${settings.pix_email}
+4. Confirme o valor: R$ ${(order.total_amount || 0).toFixed(2)}
+5. Finalize o pagamento
+
+⚠️ *IMPORTANTE:* Após realizar o pagamento PIX, envie o comprovante para este WhatsApp para confirmar o pedido!`;
+    }
+    return '';
+  };
+
   const sendOrderToWhatsApp = (order: any) => {
     if (!settings?.whatsapp_number) {
       console.log('WhatsApp Business number not configured');
@@ -40,6 +58,8 @@ export const useWhatsAppIntegration = () => {
       `${item.quantity || 0}x ${item.name || 'Item'} - R$ ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}`
     ).join('\n');
 
+    const pixInstructions = getPixInstructions(order);
+
     const message = `🍕 *NOVO PEDIDO* - ${order.order_number || 'N/A'}
 
 👤 *Cliente:* ${order.customer_name || 'N/A'}
@@ -53,7 +73,7 @@ ${itemsList}
 💳 *Pagamento:* ${order.payment_method || 'N/A'}
 ${order.notes ? `📋 *Observações:* ${order.notes}` : ''}
 
-⏰ *Pedido realizado em:* ${new Date(order.created_at).toLocaleString('pt-BR')}
+⏰ *Pedido realizado em:* ${new Date(order.created_at).toLocaleString('pt-BR')}${pixInstructions}
 
 Por favor, confirme o recebimento deste pedido.`;
 

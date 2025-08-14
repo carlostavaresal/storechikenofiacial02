@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, MapPin, Phone, User, CreditCard } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, User, CreditCard, AlertCircle } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
 import { useInputValidation } from '@/hooks/useInputValidation';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CartItem {
   id: string;
@@ -23,6 +25,7 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { createOrder, loading } = useOrders();
+  const { settings } = useCompanySettings();
   const { validateAndSanitize, sanitizeString, sanitizePhone, sanitizeEmail, schemas } = useInputValidation();
 
   // Form states
@@ -139,7 +142,7 @@ const Checkout: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Button onClick={() => navigate('/cardapio')}>
+              <Button onClick={() => navigate('/client')}>
                 Ver Cardápio
               </Button>
             </CardContent>
@@ -257,6 +260,31 @@ const Checkout: React.FC = () => {
                     value={paymentMethod}
                     onChange={setPaymentMethod}
                   />
+                  
+                  {/* Instruções PIX */}
+                  {paymentMethod === 'pix' && settings?.pix_enabled && settings?.pix_email && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="space-y-2">
+                          <p className="font-semibold">Instruções para Pagamento PIX:</p>
+                          <p><strong>Chave PIX (Email):</strong> {settings.pix_email}</p>
+                          <p><strong>Valor:</strong> R$ {totalAmount.toFixed(2)}</p>
+                          <div className="text-sm">
+                            <p><strong>Como pagar:</strong></p>
+                            <ol className="list-decimal list-inside space-y-1 ml-2">
+                              <li>Abra seu app bancário</li>
+                              <li>Escolha a opção PIX</li>
+                              <li>Cole a chave: {settings.pix_email}</li>
+                              <li>Confirme o valor: R$ {totalAmount.toFixed(2)}</li>
+                              <li>Finalize o pagamento</li>
+                              <li><strong>IMPORTANTE:</strong> Envie o comprovante via WhatsApp após o pagamento!</li>
+                            </ol>
+                          </div>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
 
                 <div className="space-y-2">
