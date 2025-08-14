@@ -79,7 +79,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
         
         toast({
           title: "Configurações salvas",
-          description: `Raio de ${deliveryRadius}km, taxa de R$ ${deliveryFee} e todos os tempos foram salvos com sucesso.`,
+          description: `Todas as configurações de entrega foram salvas com sucesso.`,
         });
       } else {
         throw new Error('Falha ao salvar configurações');

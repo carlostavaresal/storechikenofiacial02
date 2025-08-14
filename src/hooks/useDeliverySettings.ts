@@ -131,21 +131,33 @@ export const useDeliverySettings = () => {
           // First try to get existing company settings
           const { data: existingSettings } = await supabase
             .from('company_settings')
-            .select('id')
+            .select('id, whatsapp_number')
             .limit(1)
             .maybeSingle();
 
-          if (existingSettings) {
+          // Prepare data ensuring whatsapp_number is provided
+          const supabaseData = {
+            delivery_fee: parseFloat(newSettings.fee),
+            whatsapp_number: existingSettings?.whatsapp_number || ''
+          };
+
+          if (existingSettings?.id) {
             // Update existing record
             const { error } = await supabase
               .from('company_settings')
-              .update({ delivery_fee: parseFloat(newSettings.fee) })
+              .update(supabaseData)
               .eq('id', existingSettings.id);
 
             if (error) throw error;
             console.log('Delivery fee updated in Supabase');
           } else {
-            console.log('No existing company settings found in Supabase');
+            // Insert new record
+            const { error } = await supabase
+              .from('company_settings')
+              .insert([supabaseData]);
+
+            if (error) throw error;
+            console.log('New company settings created in Supabase with delivery fee');
           }
         } catch (supabaseError) {
           console.error('Error updating Supabase, but localStorage saved:', supabaseError);
