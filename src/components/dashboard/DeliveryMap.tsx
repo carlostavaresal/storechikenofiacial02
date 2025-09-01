@@ -3,6 +3,7 @@ import React from "react";
 import { MapPin, Package } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useOrders } from "@/hooks/useOrders";
 
 interface DeliveryLocation {
   id: string;
@@ -38,8 +39,20 @@ const getStatusVariant = (status: DeliveryLocation["status"]) => {
 };
 
 const DeliveryMap: React.FC = () => {
-  // Start with empty deliveries array
-  const deliveries: DeliveryLocation[] = [];
+  const { orders, loading } = useOrders();
+  
+  // Transform orders into delivery locations
+  const deliveries: DeliveryLocation[] = React.useMemo(() => {
+    return orders
+      .filter(order => order.status === 'processing' || order.status === 'delivered')
+      .map(order => ({
+        id: order.id,
+        address: order.customer_address,
+        status: order.status === 'processing' ? 'on-way' : 
+                order.status === 'delivered' ? 'delivered' : 'pending',
+        estimatedTime: order.status === 'processing' ? '15-30 min' : undefined
+      }));
+  }, [orders]);
 
   return (
     <Card className="animate-slide-in h-full" style={{ animationDelay: "0.3s" }}>

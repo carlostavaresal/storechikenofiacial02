@@ -6,24 +6,24 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { DiagnosticRunner, DiagnosticResult } from './DiagnosticRunner';
 import DiagnosticResultCard from './DiagnosticResultCard';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const SystemDiagnostics = () => {
   const { toast } = useToast();
+  const { executeAsync, isLoading } = useErrorHandler();
   const [diagnostics, setDiagnostics] = useState<DiagnosticResult[]>([]);
-  const [running, setRunning] = useState(false);
 
   const runDiagnostics = async () => {
     console.log('Starting system diagnostics from UI...');
-    setRunning(true);
     setDiagnostics([]); // Clear previous results
 
-    try {
-      const results = await DiagnosticRunner.runAllDiagnostics();
-      setDiagnostics(results);
-
+    const results = await executeAsync(async () => {
+      const diagnosticsResult = await DiagnosticRunner.runAllDiagnostics();
+      setDiagnostics(diagnosticsResult);
+      
       // Show summary toast
-      const errors = results.filter(r => r.status === 'error').length;
-      const warnings = results.filter(r => r.status === 'warning').length;
+      const errors = diagnosticsResult.filter(r => r.status === 'error').length;
+      const warnings = diagnosticsResult.filter(r => r.status === 'warning').length;
       
       if (errors > 0) {
         toast({
@@ -42,21 +42,16 @@ const SystemDiagnostics = () => {
           description: "Nenhum problema encontrado no sistema.",
         });
       }
-    } catch (error) {
-      console.error('Failed to run diagnostics:', error);
-      toast({
-        title: "Erro no Diagnóstico",
-        description: "Falha ao executar diagnósticos do sistema.",
-        variant: "destructive",
-      });
       
+      return diagnosticsResult;
+    }, 'Erro ao executar diagnósticos do sistema');
+
+    if (!results) {
       setDiagnostics([{
         name: 'Sistema Geral',
         status: 'error',
         message: 'Falha crítica na execução dos diagnósticos'
       }]);
-    } finally {
-      setRunning(false);
     }
   };
 
@@ -78,9 +73,9 @@ const SystemDiagnostics = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={runDiagnostics} disabled={running} className="w-full">
-          <RefreshCw className={`h-4 w-4 mr-2 ${running ? 'animate-spin' : ''}`} />
-          {running ? 'Executando Diagnóstico...' : 'Executar Diagnóstico'}
+        <Button onClick={runDiagnostics} disabled={isLoading} className="w-full">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Executando Diagnóstico...' : 'Executar Diagnóstico'}
         </Button>
 
         {diagnostics.length > 0 && (
@@ -94,7 +89,7 @@ const SystemDiagnostics = () => {
           </div>
         )}
 
-        {running && (
+        {isLoading && (
           <div className="text-center text-sm text-muted-foreground">
             Executando verificações do sistema...
           </div>

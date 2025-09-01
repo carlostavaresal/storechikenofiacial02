@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useInputValidation } from './useInputValidation';
+import { logError, logInfo, logDebug } from '@/lib/logger';
 
 export interface OrderItem {
   name: string;
@@ -50,9 +51,10 @@ export const useOrders = () => {
         paid_at: row.paid_at || null
       }));
       
+      logInfo('Orders fetched successfully', { count: transformedOrders.length }, 'useOrders');
       setOrders(transformedOrders);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      logError('Error fetching orders', error, 'useOrders');
       setError(error instanceof Error ? error.message : 'Error fetching orders');
     } finally {
       setLoading(false);
@@ -72,7 +74,7 @@ export const useOrders = () => {
           table: 'orders'
         },
         (payload) => {
-          console.log('Orders realtime update:', payload);
+          logDebug('Orders realtime update', payload, 'useOrders');
           fetchOrders();
         }
       )
@@ -115,9 +117,10 @@ export const useOrders = () => {
         .single();
 
       if (error) throw error;
+      logInfo('Order created successfully', { orderId: data.id }, 'useOrders');
       return data;
     } catch (error) {
-      console.error('Error creating order:', error);
+      logError('Error creating order', error, 'useOrders');
       const errorMessage = error instanceof Error ? error.message : 'Error creating order';
       setError(errorMessage);
       throw error;

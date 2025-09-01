@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 // Schemas de validação para diferentes tipos de entrada
 export const phoneSchema = z.string()
-  .min(10, 'Telefone deve ter pelo menos 10 dígitos')
-  .max(15, 'Telefone deve ter no máximo 15 dígitos')
+  .min(8, 'Telefone deve ter pelo menos 8 dígitos')
+  .max(20, 'Telefone deve ter no máximo 20 dígitos')
   .regex(/^[\d\s\-\(\)\+]+$/, 'Telefone contém caracteres inválidos');
 
 export const nameSchema = z.string()
@@ -13,7 +13,7 @@ export const nameSchema = z.string()
   .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'Nome deve conter apenas letras e espaços');
 
 export const addressSchema = z.string()
-  .min(10, 'Endereço deve ter pelo menos 10 caracteres')
+  .min(5, 'Endereço deve ter pelo menos 5 caracteres')
   .max(500, 'Endereço deve ter no máximo 500 caracteres');
 
 export const emailSchema = z.string()
@@ -36,7 +36,7 @@ export const orderSchema = z.object({
   customer_address: addressSchema,
   items: z.array(orderItemSchema).min(1, 'Pedido deve ter pelo menos 1 item'),
   total_amount: priceSchema,
-  payment_method: z.enum(['dinheiro', 'cartao', 'pix']),
+  payment_method: z.enum(['dinheiro', 'cartao_credito', 'cartao_debito', 'pix']),
   payment_status: z.enum(['pending', 'paid', 'failed', 'cancelled']).default('pending'),
   notes: z.string().max(1000, 'Observações devem ter no máximo 1000 caracteres').optional(),
   status: z.enum(['pending', 'processing', 'delivered', 'cancelled']).default('pending')

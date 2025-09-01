@@ -138,40 +138,49 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                 <span className="text-sm font-medium">Localização - Store Chicken</span>
               </div>
               
-              <div className="h-80 rounded-lg border overflow-hidden bg-gradient-to-br from-blue-50 to-green-50">
-                <div className="w-full h-full flex flex-col items-center justify-center p-8">
-                  <div className="text-center space-y-4">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span className="text-2xl">🍗</span>
-                      </div>
-                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h3 className="font-bold text-lg text-gray-800">Store Chicken</h3>
-                      <p className="text-sm text-gray-600 max-w-sm">
-                        {addressString}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center justify-center gap-2 text-sm text-blue-600 bg-white/80 rounded-full px-4 py-2">
+                <div className="relative bg-gray-100 rounded-lg h-64 overflow-hidden mb-6">
+                  {/* Google Maps Integration */}
+                  <div className="absolute inset-0">
+                    <iframe
+                      src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBDaeWicvigtP9xPv919E-RNoxfvC-Hqik&q=${encodeURIComponent(addressString)}&zoom=14`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen={true}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      onError={() => {
+                        // Fallback to visual representation if maps fail
+                        console.warn('Google Maps failed to load, showing visual representation');
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Overlay with delivery info */}
+                  <div className="absolute top-4 right-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-blue-600 bg-white/90 rounded-full px-4 py-2 shadow-sm">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Área de entrega: {deliveryRadius}km de raio</span>
+                      <span>Raio: {deliveryRadius}km</span>
                     </div>
                     
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-white/90 rounded-full px-4 py-2 shadow-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Taxa: R$ {deliveryFee}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="absolute bottom-4 left-4">
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={openInGoogleMaps}
-                      className="gap-2 mt-4"
+                      className="gap-2 bg-white/90 hover:bg-white shadow-sm"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      Ver no Google Maps
+                      Abrir no Google Maps
                     </Button>
                   </div>
                 </div>
-              </div>
               
               <div className="flex items-center justify-center gap-4 bg-blue-50 p-3 rounded-md">
                 <div className="flex items-center gap-2">
