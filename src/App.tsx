@@ -46,11 +46,16 @@ const App = () => {
             <BrowserRouter>
               <div className="min-h-screen bg-background">
                 <Routes>
-                  {/* Redirect root to login */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  {/* Redirect root to client menu for public access */}
+                  <Route path="/" element={<Navigate to="/client" replace />} />
                   
-                  {/* Auth Routes */}
+                  {/* Auth Routes - Admin only */}
                   <Route path="/login" element={<Login />} />
+                  
+                  {/* Public Client Routes - No authentication required */}
+                  <Route path="/client" element={<ClientMenu />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/success" element={<Success />} />
                   
                   {/* Protected Admin Routes */}
                   <Route 
@@ -134,13 +139,8 @@ const App = () => {
                     } 
                   />
                   
-                  {/* Public Client Routes */}
-                  <Route path="/client" element={<ClientMenu />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/success" element={<Success />} />
-                  
-                  {/* Catch all route - redirect to login */}
-                  <Route path="*" element={<Navigate to="/login" replace />} />
+                  {/* Catch all route - redirect to client menu for public access */}
+                  <Route path="*" element={<Navigate to="/client" replace />} />
                 </Routes>
                 <OfflineIndicator />
               </div>
