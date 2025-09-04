@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import SmartRedirect from "@/components/auth/SmartRedirect";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 import OfflineIndicator from "@/components/common/OfflineIndicator";
 
@@ -46,8 +47,8 @@ const App = () => {
             <BrowserRouter>
               <div className="min-h-screen bg-background">
                 <Routes>
-                  {/* Redirect root to client menu for public access */}
-                  <Route path="/" element={<Navigate to="/client" replace />} />
+                  {/* Smart redirect based on authentication status */}
+                  <Route path="/" element={<SmartRedirect />} />
                   
                   {/* Auth Routes - Admin only */}
                   <Route path="/login" element={<Login />} />
