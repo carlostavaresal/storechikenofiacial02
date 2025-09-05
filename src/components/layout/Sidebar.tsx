@@ -38,6 +38,7 @@ export function Sidebar({ className }: SidebarProps) {
     setIsCollapsed(true);
   };
 
+  // Sistema de Menu com Backup - Sincronizado com GitHub
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Pedidos", path: "/orders", icon: ShoppingCart },
