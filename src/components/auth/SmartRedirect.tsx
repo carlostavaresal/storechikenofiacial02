@@ -10,13 +10,9 @@ const SmartRedirect: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  // If authenticated, redirect based on role
+  // If authenticated, always redirect to dashboard
   if (isAuthenticated) {
-    if (isAdmin) {
-      return <Navigate to="/dashboard" replace />;
-    } else {
-      return <Navigate to="/client" replace />;
-    }
+    return <Navigate to="/dashboard" replace />;
   }
 
   // If not authenticated, redirect to auth page
