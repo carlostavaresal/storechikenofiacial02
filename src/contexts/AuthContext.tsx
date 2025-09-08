@@ -1,12 +1,24 @@
-
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: 'admin' | 'client';
+  company_name: string | null;
+  phone: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<{ error?: string }>;
+  isAdmin: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, fullName?: string, role?: 'admin' | 'client') => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -21,133 +33,158 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    console.log('AuthProvider: Initializing...');
-    
-    // Verificar se há uma sessão ativa armazenada
+  // Fetch user profile
+  const fetchProfile = async (userId: string) => {
     try {
-      const storedAuth = localStorage.getItem('admin_auth');
-      console.log('AuthProvider: Stored auth:', storedAuth);
-      
-      if (storedAuth) {
-        const authData = JSON.parse(storedAuth);
-        if (authData.isAuthenticated && authData.username === 'romenia12') {
-          console.log('AuthProvider: Restoring session from localStorage');
-          
-          // Simular um usuário autenticado
-          const mockUser = {
-            id: 'admin-user',
-            email: 'romenia12',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            last_sign_in_at: new Date().toISOString(),
-          } as User;
-          
-          const mockSession = {
-            access_token: 'mock-token',
-            refresh_token: 'mock-refresh',
-            expires_in: 3600,
-            token_type: 'bearer',
-            user: mockUser
-          } as Session;
-          
-          setUser(mockUser);
-          setSession(mockSession);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      return data as UserProfile;
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer profile fetching to avoid recursion
+          setTimeout(async () => {
+            const userProfile = await fetchProfile(session.user.id);
+            setProfile(userProfile);
+            setLoading(false);
+          }, 0);
+        } else {
+          setProfile(null);
+          setLoading(false);
         }
       }
-    } catch (error) {
-      console.error('AuthProvider: Error restoring session:', error);
-    }
-    
-    setLoading(false);
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id).then(profile => {
+          setProfile(profile);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      console.log('AuthProvider: Login attempt for:', username);
-      
-      // Verificar credenciais hardcoded
-      if (username === 'romenia12' && password === 'romenia12') {
-        console.log('AuthProvider: Login successful');
-        
-        // Criar uma sessão simulada
-        const mockUser = {
-          id: 'admin-user',
-          email: 'romenia12',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-        } as User;
-        
-        const mockSession = {
-          access_token: 'mock-token',
-          refresh_token: 'mock-refresh',
-          expires_in: 3600,
-          token_type: 'bearer',
-          user: mockUser
-        } as Session;
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        // Armazenar no localStorage
-        const authData = {
-          isAuthenticated: true,
-          username: username,
-          timestamp: Date.now()
-        };
-        
-        localStorage.setItem('admin_auth', JSON.stringify(authData));
-        console.log('AuthProvider: Session saved to localStorage');
-
-        setUser(mockUser);
-        setSession(mockSession);
-        
-        return {};
-      } else {
-        console.log('AuthProvider: Invalid credentials');
-        return { error: 'Usuário ou senha incorretos' };
+      if (error) {
+        return { success: false, error: error.message };
       }
+
+      return { success: true };
     } catch (error) {
-      console.error('AuthProvider: Login exception:', error);
-      return { error: 'Erro inesperado durante o login' };
+      console.error('Login error:', error);
+      return { success: false, error: 'Erro inesperado durante o login' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signup = async (
+    email: string, 
+    password: string, 
+    fullName?: string, 
+    role: 'admin' | 'client' = 'client'
+  ) => {
+    try {
+      setLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || '',
+            role: role
+          }
+        }
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { success: false, error: 'Erro inesperado durante o cadastro' };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      console.log('AuthProvider: Logging out');
-      
-      // Limpar dados do localStorage
-      localStorage.removeItem('admin_auth');
+      setLoading(true);
+      await supabase.auth.signOut();
       setUser(null);
       setSession(null);
-      
-      console.log('AuthProvider: Logout complete');
+      setProfile(null);
     } catch (error) {
-      console.error('AuthProvider: Logout exception:', error);
+      console.error('Logout error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const isAuthenticated = !!session && !!user;
-
-  console.log('AuthProvider: Current state:', { 
-    isAuthenticated, 
-    hasUser: !!user, 
-    hasSession: !!session, 
-    loading 
-  });
+  const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      isAuthenticated, 
-      login, 
-      logout, 
-      loading 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      profile,
+      isAuthenticated,
+      isAdmin,
+      login,
+      signup,
+      logout,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

@@ -11,7 +11,7 @@ import ErrorBoundary from "@/components/common/ErrorBoundary";
 import OfflineIndicator from "@/components/common/OfflineIndicator";
 
 // Import pages
-import Login from "@/pages/auth/Login";
+import Auth from "@/pages/auth/Auth";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Products from "@/pages/products/Products";
 import Orders from "@/pages/orders/Orders";
@@ -46,103 +46,103 @@ const App = () => {
           <AuthProvider>
             <BrowserRouter>
               <div className="min-h-screen bg-background">
-                <Routes>
-                  {/* Smart redirect based on authentication status */}
-                  <Route path="/" element={<SmartRedirect />} />
-                  
-                  {/* Auth Routes - Admin only */}
-                  <Route path="/login" element={<Login />} />
-                  
-                  {/* Public Client Routes - No authentication required */}
-                  <Route path="/client" element={<ClientMenu />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/success" element={<Success />} />
-                  
-                  {/* Protected Admin Routes */}
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/products" 
-                    element={
-                      <ProtectedRoute>
-                        <Products />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/orders" 
-                    element={
-                      <ProtectedRoute>
-                        <Orders />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/settings" 
-                    element={
-                      <ProtectedRoute>
-                        <Settings />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/history" 
-                    element={
-                      <ProtectedRoute>
-                        <History />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/delivery" 
-                    element={
-                      <ProtectedRoute>
-                        <DeliveryAreas />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/payment" 
-                    element={
-                      <ProtectedRoute>
-                        <PaymentMethods />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/promotions" 
-                    element={
-                      <ProtectedRoute>
-                        <PromotionalCodes />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/menu" 
-                    element={
-                      <ProtectedRoute>
-                        <OnlineMenu />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/backup" 
-                    element={
-                      <ProtectedRoute>
-                        <SystemBackup />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Catch all route - redirect to client menu for public access */}
-                  <Route path="*" element={<Navigate to="/client" replace />} />
-                </Routes>
+                 <Routes>
+                   {/* Smart redirect based on authentication status */}
+                   <Route path="/" element={<SmartRedirect />} />
+                   
+                   {/* Auth Routes */}
+                   <Route path="/auth" element={<Auth />} />
+                   
+                   {/* Public Client Routes - No authentication required */}
+                   <Route path="/client" element={<ClientMenu />} />
+                   <Route path="/checkout" element={<Checkout />} />
+                   <Route path="/success" element={<Success />} />
+                   
+                   {/* Protected Admin Routes */}
+                   <Route 
+                     path="/dashboard" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <Dashboard />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/products" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <Products />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/orders" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <Orders />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/settings" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <Settings />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/history" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <History />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/delivery" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <DeliveryAreas />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/payment" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <PaymentMethods />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/promotions" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <PromotionalCodes />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/menu" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <OnlineMenu />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   <Route 
+                     path="/backup" 
+                     element={
+                       <ProtectedRoute requireAdmin>
+                         <SystemBackup />
+                       </ProtectedRoute>
+                     } 
+                   />
+                   
+                   {/* Catch all route - redirect to smart redirect */}
+                   <Route path="*" element={<SmartRedirect />} />
+                 </Routes>
                 <OfflineIndicator />
               </div>
               <Toaster />

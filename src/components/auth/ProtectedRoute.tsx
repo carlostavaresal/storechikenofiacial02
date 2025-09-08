@@ -2,33 +2,33 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import LoadingSpinner from '@/components/layout/LoadingSpinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
 
-  console.log('ProtectedRoute: Auth state:', { isAuthenticated, loading });
+  console.log('ProtectedRoute: Auth state:', { isAuthenticated, isAdmin, loading, requireAdmin });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute: Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
+    console.log('ProtectedRoute: Not authenticated, redirecting to auth');
+    return <Navigate to="/auth" replace />;
   }
 
-  console.log('ProtectedRoute: Authenticated, rendering children');
+  if (requireAdmin && !isAdmin) {
+    console.log('ProtectedRoute: Admin required but user is not admin, redirecting to client');
+    return <Navigate to="/client" replace />;
+  }
+
+  console.log('ProtectedRoute: Access granted, rendering children');
   return <>{children}</>;
 };
 

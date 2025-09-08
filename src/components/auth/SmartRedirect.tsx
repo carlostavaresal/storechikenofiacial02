@@ -1,28 +1,26 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import LoadingSpinner from '@/components/layout/LoadingSpinner';
 
 const SmartRedirect: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
-  // If authenticated, redirect to dashboard
+  // If authenticated, redirect based on role
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    if (isAdmin) {
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      return <Navigate to="/client" replace />;
+    }
   }
 
-  // If not authenticated, redirect to client menu
-  return <Navigate to="/client" replace />;
+  // If not authenticated, redirect to auth page
+  return <Navigate to="/auth" replace />;
 };
 
 export default SmartRedirect;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useInputValidation } from './useInputValidation';
 import { logError, logInfo, logDebug } from '@/lib/logger';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface OrderItem {
   name: string;
@@ -22,12 +23,14 @@ export interface Order {
   paid_at?: string | null;
   notes?: string | null;
   status: 'pending' | 'processing' | 'delivered' | 'cancelled';
+  user_id: string;
   created_at: string;
   updated_at: string;
 }
 
 export const useOrders = () => {
   const { validateAndSanitize, schemas } = useInputValidation();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,9 +88,13 @@ export const useOrders = () => {
     };
   }, []);
 
-  const createOrder = async (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>) => {
+  const createOrder = async (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at' | 'user_id'>) => {
     try {
       setError(null);
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
       
       // Validar dados de entrada
       const validation = validateAndSanitize(schemas.order, orderData);
@@ -111,6 +118,7 @@ export const useOrders = () => {
           payment_status: validatedData.payment_status || 'pending',
           notes: validatedData.notes,
           status: validatedData.status,
+          user_id: user.id,
           order_number: ''
         }])
         .select()
