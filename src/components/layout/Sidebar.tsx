@@ -15,6 +15,7 @@ import {
   BookOpen,
   BadgePercent,
   HardDrive,
+  FolderTree,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Pedidos", path: "/orders", icon: ShoppingCart },
     { name: "Produtos", path: "/products", icon: Package },
+    { name: "Categorias", path: "/categories", icon: FolderTree },
     { name: "Áreas de Entrega", path: "/delivery", icon: MapPin },
     { name: "Métodos de Pagamento", path: "/payment", icon: CreditCard },
     { name: "Códigos Promocionais", path: "/promotions", icon: BadgePercent },

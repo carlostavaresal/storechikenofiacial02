@@ -22,6 +22,7 @@ import PaymentMethods from "@/pages/payment/PaymentMethods";
 import PromotionalCodes from "@/pages/promotions/PromotionalCodes";
 import OnlineMenu from "@/pages/menu/OnlineMenu";
 import SystemBackup from "@/pages/backup/SystemBackup";
+import Categories from "@/pages/categories/Categories";
 
 // Client pages
 import ClientMenu from "@/pages/client/ClientMenu";
@@ -132,16 +133,24 @@ const App = () => {
                      } 
                    />
                    <Route 
-                     path="/backup" 
-                     element={
-                       <ProtectedRoute requireAdmin>
-                         <SystemBackup />
-                       </ProtectedRoute>
-                     } 
-                   />
-                   
-                   {/* Catch all route - redirect to smart redirect */}
-                   <Route path="*" element={<SmartRedirect />} />
+                      path="/backup" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <SystemBackup />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/categories" 
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <Categories />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Catch all route - redirect to smart redirect */}
+                    <Route path="*" element={<SmartRedirect />} />
                  </Routes>
                 <OfflineIndicator />
               </div>
