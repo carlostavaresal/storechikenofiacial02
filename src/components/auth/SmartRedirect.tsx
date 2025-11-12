@@ -10,13 +10,8 @@ const SmartRedirect: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  // If authenticated, always redirect to dashboard
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If not authenticated, redirect to auth page
-  return <Navigate to="/auth" replace />;
+  // Temporarily allow access without auth: always go to dashboard
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default SmartRedirect;

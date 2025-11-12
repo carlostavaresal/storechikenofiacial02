@@ -14,21 +14,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
 
   console.log('ProtectedRoute: Auth state:', { isAuthenticated, isAdmin, loading, requireAdmin });
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!isAuthenticated) {
-    console.log('ProtectedRoute: Not authenticated, redirecting to auth');
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (requireAdmin && !isAdmin) {
-    console.log('ProtectedRoute: Admin required but user is not admin, redirecting to client');
-    return <Navigate to="/client" replace />;
-  }
-
-  console.log('ProtectedRoute: Access granted, rendering children');
+  // Temporary bypass: allow access without authentication and admin checks
+  console.warn('ProtectedRoute bypass active: allowing access without auth', { isAuthenticated, isAdmin, loading, requireAdmin });
   return <>{children}</>;
 };
 

@@ -51,7 +51,7 @@ const App = () => {
                    <Route path="/" element={<SmartRedirect />} />
                    
                    {/* Auth Routes */}
-                   <Route path="/auth" element={<Auth />} />
+                   <Route path="/auth" element={<Navigate to="/dashboard" replace />} />
                    
                    {/* Public Client Routes - No authentication required */}
                    <Route path="/client" element={<ClientMenu />} />
